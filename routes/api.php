@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Responses\ApiResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -10,18 +11,16 @@ use Illuminate\Support\Facades\Route;
 
 
 
+// AUTHENTICATION 
+Route::post('/register', [AuthController::class, "register"]);
+Route::post('/login', [AuthController::class, "login"]);
 
-Route::get('/test-1', function () {
-    return response()->json(['message' => 'Hello, World!']);
-});
+
 
 
 
 Route::middleware("auth:sanctum")->group(function () {
 
     Route::post("/logout", [AuthController::class, "logout"]);
-
-    Route::get('/test', function () {
-        return response()->json(['message' => 'Hello, World! Login']);
-    });
+    Route::get("/user", [AuthController::class, "user"]);
 });

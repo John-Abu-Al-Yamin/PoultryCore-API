@@ -1,0 +1,127 @@
+# 📋 Implementation Plan — PoultryCore Backend
+
+## Priority & Dependency Order (1 = start first)
+
+---
+
+### 🟢 PHASE 1: Foundation (no dependencies)
+
+- [ ] **1.1** Implement Auth endpoints (`POST /api/register`, `POST /api/login`, `POST /api/logout`, `GET /api/user`)
+- [ ] **1.2** Create `app/Http/Requests/` — validation form requests for all entities
+- [ ] **1.3** Create `app/Http/Resources/` — API resource/transformer classes for all entities
+- [ ] **1.4** Add `AppServiceProvider` global scopes or trait for user-scoped queries
+- [ ] **1.5** Write tests for auth flow
+
+---
+
+### 🟢 PHASE 2: Core Domain Models (depends on 1.1)
+
+- [ ] **2.1** Create `barns` migration + `Barn` model + `BarnController` + CRUD routes
+- [ ] **2.2** Create `batches` migration + `Batch` model + `BatchController` + CRUD routes
+- [ ] **2.3** Create `suppliers` migration + `Supplier` model + `SupplierController` + CRUD routes
+- [ ] **2.4** Create `customers` migration + `Customer` model + `CustomerController` + CRUD routes
+- [ ] **2.5** Write tests for all Phase 2 endpoints
+
+---
+
+### 🟢 PHASE 3: Transactions (depends on Phase 2)
+
+- [ ] **3.1** Create `purchases` migration + `Purchase` model + `PurchaseController`
+  - [ ] Stock increase logic on create
+  - [ ] Debit supplier if credit purchase
+- [ ] **3.2** Create `sales` migration + `Sale` model + `SaleController`
+  - [ ] Stock decrease logic on create
+  - [ ] Debit customer if credit sale
+- [ ] **3.3** Create `expenses` migration + `Expense` model + `ExpenseController` + CRUD
+- [ ] **3.4** Create `deaths` migration + `Death` model + `DeathController`
+  - [ ] Stock decrease logic on create
+- [ ] **3.5** Write tests for all Phase 3 endpoints
+
+---
+
+### 🟢 PHASE 4: Payments & Financial (depends on Phase 3)
+
+- [ ] **4.1** Create `payments` migration + `Payment` model + `PaymentController`
+  - [ ] Payment from customer (reduce receivables)
+  - [ ] Payment to supplier (reduce payables)
+- [ ] **4.2** Implement payment reconciliation (update sale/purchase `remaining_amount` and `payment_status`)
+- [ ] **4.3** Write tests for payments flow
+
+---
+
+### 🟢 PHASE 5: Dashboard & Reports (depends on Phase 4)
+
+- [ ] **5.1** Dashboard stats endpoint (GET /api/dashboard)
+  - [ ] Total poultry count
+  - [ ] Revenue (sum of sales)
+  - [ ] Total expenses
+  - [ ] Total purchases
+  - [ ] Receivables (owed to user)
+  - [ ] Payables (user owes)
+  - [ ] Net profit
+  - [ ] Active batches count
+  - [ ] Barns count
+- [ ] **5.2** Profit & Loss report endpoint
+- [ ] **5.3** Stock report endpoint
+- [ ] **5.4** Debts report (receivables / payables) endpoint
+- [ ] **5.5** Batch performance report
+- [ ] **5.6** Barn performance report
+- [ ] **5.7** Write tests for reports
+
+---
+
+### 🟢 PHASE 6: Batch Lifecycle (depends on Phase 5)
+
+- [ ] **6.1** Implement batch close/archive logic
+  - [ ] Set `status = closed`
+  - [ ] Set `end_date = now()`
+  - [ ] Calculate final profit for batch
+- [ ] **6.2** Write tests for batch lifecycle
+
+---
+
+### 🟢 PHASE 7: Polish & Production Readiness (depends on Phase 6)
+
+- [ ] **7.1** Implement global user-data isolation (scope all queries by `user_id`)
+- [ ] **7.2** Add pagination to all list endpoints
+- [ ] **7.3** Add sorting & filtering (by date, status, etc.)
+- [ ] **7.4** Rate limiting on auth endpoints
+- [ ] **7.5** Full test coverage (Feature tests for every endpoint)
+- [ ] **7.6** API documentation generation (Scramble / Scribe)
+- [ ] **7.7** Seeders for demo data
+
+---
+
+## 📊 Dependency Graph
+
+```
+Phase 1 (Auth/Foundation)
+    ↓
+Phase 2 (Barns, Batches, Customers, Suppliers)
+    ↓
+Phase 3 (Purchases, Sales, Expenses, Deaths)
+    ↓
+Phase 4 (Payments)
+    ↓
+Phase 5 (Dashboard, Reports)
+    ↓
+Phase 6 (Batch Lifecycle)
+    ↓
+Phase 7 (Polish, Tests, Docs)
+```
+
+## 🧱 Suggested DB Migration Order
+
+1. `create_barns_table`
+2. `create_batches_table`
+3. `create_customers_table`
+4. `create_suppliers_table`
+5. `create_purchases_table`
+6. `create_sales_table`
+7. `create_expenses_table`
+8. `create_deaths_table`
+9. `create_payments_table`
+
+## 🔐 Data Isolation Pattern
+
+Every domain table gets a `user_id` foreign key. All queries use `where('user_id', auth()->id())`. A reusable `UserScoped` trait or global scope should be added to all models to enforce this automatically.
