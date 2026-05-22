@@ -1,0 +1,36 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('batches', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('user_id')->constrained("users")->onDelete('cascade');
+            $table->foreignId('barn_id')->constrained("barns")->onDelete("cascade");
+            $table->string('poultry_type');
+            $table->integer('initial_quantity');
+            $table->integer('current_quantity');
+            $table->date('start_date');
+            $table->date('end_date')->nullable();
+            $table->enum('status', ['active', 'closed'])->default('active');
+            $table->text('notes')->nullable();
+            $table->timestamps();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('batches');
+    }
+};
