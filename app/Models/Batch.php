@@ -6,7 +6,16 @@ use Illuminate\Database\Eloquent\Model;
 
 class Batch extends Model
 {
-    //
+    protected function casts(): array
+    {
+        return [
+            'initial_quantity' => 'integer',
+            'current_quantity' => 'integer',
+            'start_date' => 'date',
+            'end_date' => 'date',
+        ];
+    }
+
     protected $fillable = [
         'user_id',
         'barn_id',

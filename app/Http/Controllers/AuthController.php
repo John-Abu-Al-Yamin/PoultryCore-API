@@ -43,7 +43,7 @@ class AuthController extends Controller
                 errors: [
                     [
                         'field' => 'password',
-                        'message' => 'كلمة المرور غير صحيحة'
+                        'message' => 'بيانات الدخول غير صحيحة'
                     ]
                 ]
             );

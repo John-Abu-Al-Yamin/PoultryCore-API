@@ -24,7 +24,7 @@ class LoginRequest extends BaseApiRequest
     {
         return [
             'phone' => 'required|string|max:255',
-            'password' => 'required|string|min:8'
+            'password' => 'required|string|min:6'
         ];
     }
 
@@ -40,7 +40,7 @@ class LoginRequest extends BaseApiRequest
             'password.required' =>
             'كلمة المرور مطلوبة.',
             'password.min' =>
-            'كلمة المرور يجب أن تكون على الأقل 8 أحرف.',
+            'كلمة المرور يجب أن تكون على الأقل 6 أحرف.',
 
         ];
     }

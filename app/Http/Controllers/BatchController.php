@@ -53,6 +53,12 @@ class BatchController extends Controller
 
         $batch = $user->batches()->create($data);
 
+        // complete setup
+        if ($user->has_completed_setup == false) {
+            $user->update([
+                'has_completed_setup' => true
+            ]);
+        }
         return ApiResponse::success(
             data: $batch,
             message: 'تم إنشاء الدفعة بنجاح',

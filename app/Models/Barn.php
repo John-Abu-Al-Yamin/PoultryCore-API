@@ -6,7 +6,13 @@ use Illuminate\Database\Eloquent\Model;
 
 class Barn extends Model
 {
-    //
+    protected function casts(): array
+    {
+        return [
+            'capacity' => 'integer',
+        ];
+    }
+
     protected $fillable = [
         'user_id',
         'name',

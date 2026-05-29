@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('name');
             $table->unique(['user_id', 'name']);
             $table->string('location')->nullable();
-            $table->integer('capacity');
+            $table->integer('capacity')->nullable();
             $table->text('notes')->nullable();
             $table->timestamps();
         });

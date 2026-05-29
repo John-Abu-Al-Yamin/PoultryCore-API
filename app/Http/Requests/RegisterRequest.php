@@ -26,7 +26,7 @@ class RegisterRequest extends BaseApiRequest
             //
             'name' => 'required|string|min:3|max:255',
             'phone' => ['required', 'string', 'unique:users,phone', 'regex:/^01[0125][0-9]{8}$/'],
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'password' => ['required', 'string', 'min:6', 'confirmed'],
             'has_completed_setup' => 'sometimes|boolean',
             'role' => 'sometimes|string|in:admin,user'
         ];
@@ -56,7 +56,7 @@ class RegisterRequest extends BaseApiRequest
             'كلمة المرور مطلوبة.',
 
             'password.min' =>
-            'كلمة المرور يجب أن تكون على الأقل 8 أحرف.',
+            'كلمة المرور يجب أن تكون على الأقل 6 أحرف.',
 
             'password.confirmed' =>
             'تأكيد كلمة المرور لا يتطابق.',
