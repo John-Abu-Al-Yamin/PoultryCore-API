@@ -49,7 +49,6 @@ class BatchController extends Controller
         }
 
         $data['status'] = 'active';
-        $data['current_quantity'] = $data['initial_quantity'];
 
         $batch = $user->batches()->create($data);
 

@@ -18,7 +18,6 @@ class UpdateBatchRequest extends BaseApiRequest
         return [
             'barn_id' => ['sometimes', 'integer', 'exists:barns,id'],
             'poultry_type' => ['sometimes', 'string', 'max:255'],
-            'initial_quantity' => ['sometimes', 'integer', 'min:1'],
             'start_date' => ['sometimes', 'date'],
             'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
             'notes' => ['nullable', 'string'],
@@ -34,8 +33,6 @@ class UpdateBatchRequest extends BaseApiRequest
             'poultry_type.string' => 'نوع الدواجن يجب أن يكون نصًا.',
             'poultry_type.max' => 'نوع الدواجن يجب ألا يزيد عن 255 حرف.',
 
-            'initial_quantity.integer' => 'الكمية الابتدائية يجب أن تكون رقمًا صحيحًا.',
-            'initial_quantity.min' => 'الكمية الابتدائية يجب ألا تقل عن 1.',
 
             'start_date.date' => 'تاريخ البداية يجب أن يكون تاريخًا صحيحًا.',
 

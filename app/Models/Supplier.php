@@ -6,7 +6,6 @@ use Illuminate\Database\Eloquent\Model;
 
 class Supplier extends Model
 {
-    //
     protected $fillable = [
         'user_id',
         'name',
@@ -22,5 +21,15 @@ class Supplier extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function purchases()
+    {
+        return $this->hasMany(Purchase::class);
+    }
+
+    public function payments()
+    {
+        return $this->hasMany(Payment::class);
     }
 }

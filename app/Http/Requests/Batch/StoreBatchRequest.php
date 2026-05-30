@@ -33,22 +33,12 @@ class StoreBatchRequest extends BaseApiRequest
                 }),
             ],
             'poultry_type' => ['required', 'string', 'max:255'],
-            'initial_quantity' => [
-                'required',
-                'integer',
-                'min:1',
-                function ($attribute, $value, $fail) {
-                    $barn = Barn::find($this->input('barn_id'));
-                    if ($barn && $value > $barn->capacity) {
-                        $fail('الكمية الابتدائية لا يمكن أن تتجاوز سعة العنبر.');
-                    }
-                },
-            ],
             'start_date' => ['required', 'date'],
             'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
             'notes' => ['nullable', 'string'],
         ];
     }
+
 
     public function messages(): array
     {
@@ -60,11 +50,6 @@ class StoreBatchRequest extends BaseApiRequest
             'poultry_type.required' => 'نوع الدواجن مطلوب.',
             'poultry_type.string' => 'نوع الدواجن يجب أن يكون نصًا.',
             'poultry_type.max' => 'نوع الدواجن يجب ألا يزيد عن 255 حرف.',
-
-            'initial_quantity.required' => 'الكمية الابتدائية مطلوبة.',
-            'initial_quantity.integer' => 'الكمية الابتدائية يجب أن تكون رقمًا صحيحًا.',
-            'initial_quantity.min' => 'الكمية الابتدائية يجب ألا تقل عن 1.',
-            'initial_quantity.max' => 'الكمية الابتدائية لا يمكن أن تتجاوز سعة العنبر.',
 
             'start_date.required' => 'تاريخ البداية مطلوب.',
             'start_date.date' => 'تاريخ البداية يجب أن يكون تاريخًا صحيحًا.',

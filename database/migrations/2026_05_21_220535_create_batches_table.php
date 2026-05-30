@@ -16,8 +16,7 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained("users")->onDelete('cascade');
             $table->foreignId('barn_id')->constrained("barns")->onDelete("cascade");
             $table->string('poultry_type');
-            $table->integer('initial_quantity');
-            $table->integer('current_quantity');
+            $table->integer('current_quantity')->default(0);
             $table->date('start_date');
             $table->date('end_date')->nullable();
             $table->enum('status', ['active', 'closed'])->default('active');

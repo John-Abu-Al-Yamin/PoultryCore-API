@@ -3,9 +3,9 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BarnController;
 use App\Http\Controllers\BatchController;
+use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\SupplierController;
-use App\Http\Responses\ApiResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 // Route::get('/user', function (Request $request) {
@@ -48,4 +48,18 @@ Route::middleware("auth:sanctum")->group(function () {
     Route::get("/suppliers/{id}", [SupplierController::class, "show"]);
     Route::put("/suppliers/{id}", [SupplierController::class, "update"]);
     Route::delete("/suppliers/{id}", [SupplierController::class, "destroy"]);
+
+    // PURCHASE ROUTES
+    Route::get("/purchases", [PurchaseController::class, "index"]);
+    Route::post("/purchases", [PurchaseController::class, "store"]);
+    Route::get("/purchases/{id}", [PurchaseController::class, "show"]);
+    Route::put("/purchases/{id}", [PurchaseController::class, "update"]);
+    Route::delete("/purchases/{id}", [PurchaseController::class, "destroy"]);
+
+    // PAYMENT ROUTES
+    Route::get("/payments", [PaymentController::class, "index"]);
+    Route::post("/payments", [PaymentController::class, "store"]);
+    Route::get("/payments/{id}", [PaymentController::class, "show"]);
+    Route::put("/payments/{id}", [PaymentController::class, "update"]);
+    Route::delete("/payments/{id}", [PaymentController::class, "destroy"]);
 });

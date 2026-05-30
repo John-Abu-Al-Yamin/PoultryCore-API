@@ -11,19 +11,21 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('purchases', function (Blueprint $table) {
+        Schema::create('payments', function (Blueprint $table) {
             $table->id();
-
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
-            $table->foreignId('supplier_id')->nullable()->constrained('suppliers')->onDelete('cascade');
-            $table->foreignId('batch_id')->nullable()->constrained('batches')->onDelete('cascade');
 
-            $table->string('item_name');
-            $table->integer('quantity');
-            $table->decimal('unit_price', 10, 2);
-            $table->decimal('total_price', 10, 2);
-            $table->date('purchase_date');
-            $table->enum('payment_type', ['cash', 'credit']);
+            $table->enum('type', ['from_customer', 'to_supplier']);
+
+            $table->foreignId('supplier_id')->nullable()->constrained('suppliers')->onDelete('cascade');
+            $table->foreignId('purchase_id')->nullable()->constrained('purchases')->onDelete('cascade');
+            $table->unsignedBigInteger('customer_id')->nullable();
+            $table->unsignedBigInteger('sale_id')->nullable();
+
+            $table->decimal('amount', 10, 2);
+            $table->date('payment_date');
+            $table->string('payment_method');
+            $table->text('notes')->nullable();
 
             $table->timestamps();
         });
@@ -34,6 +36,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('purchases');
+        Schema::dropIfExists('payments');
     }
 };
