@@ -47,6 +47,12 @@ class PaymentController extends Controller
                     statusCode: 422
                 );
             }
+            if (isset($data['supplier_id']) && $data['supplier_id'] !== $purchase->supplier_id) {
+                return ApiResponse::error(
+                    message: 'المورد المحدد لا يتطابق مع مورد عملية الشراء',
+                    statusCode: 422
+                );
+            }
         }
 
         if ($data['type'] === 'from_customer' && isset($data['sale_id'])) {
@@ -63,6 +69,12 @@ class PaymentController extends Controller
             if ($data['amount'] > $sale->total_price - $sale->paid_amount) {
                 return ApiResponse::error(
                     message: 'المبلغ يتجاوز القيمة المتبقية المطلوب تحصيلها',
+                    statusCode: 422
+                );
+            }
+            if (isset($data['customer_id']) && $data['customer_id'] !== $sale->customer_id) {
+                return ApiResponse::error(
+                    message: 'العميل المحدد لا يتطابق مع عميل عملية البيع',
                     statusCode: 422
                 );
             }
@@ -139,6 +151,25 @@ class PaymentController extends Controller
 
         $data = $request->validated();
 
+        // When type changes, reset opposite-side IDs to prevent double-effect
+        if (array_key_exists('type', $data) && $data['type'] !== $payment->type) {
+            if ($data['type'] === 'from_customer') {
+                if (! array_key_exists('purchase_id', $data)) {
+                    $data['purchase_id'] = null;
+                }
+                if (! array_key_exists('supplier_id', $data)) {
+                    $data['supplier_id'] = null;
+                }
+            } elseif ($data['type'] === 'to_supplier') {
+                if (! array_key_exists('sale_id', $data)) {
+                    $data['sale_id'] = null;
+                }
+                if (! array_key_exists('customer_id', $data)) {
+                    $data['customer_id'] = null;
+                }
+            }
+        }
+
         $oldAmount = $payment->amount;
         $newAmount = $data['amount'] ?? $oldAmount;
 
@@ -169,6 +200,13 @@ class PaymentController extends Controller
                     statusCode: 422
                 );
             }
+            $incomingSupplierId = $data['supplier_id'] ?? $payment->supplier_id;
+            if ($incomingSupplierId && $incomingSupplierId !== $targetPurchase->supplier_id) {
+                return ApiResponse::error(
+                    message: 'المورد المحدد لا يتطابق مع مورد عملية الشراء',
+                    statusCode: 422
+                );
+            }
         }
 
         // --- Sale validation ---
@@ -195,6 +233,13 @@ class PaymentController extends Controller
             if ($projectedPaid > $targetSale->total_price) {
                 return ApiResponse::error(
                     message: 'المبلغ يتجاوز القيمة المتبقية المطلوب تحصيلها',
+                    statusCode: 422
+                );
+            }
+            $incomingCustomerId = $data['customer_id'] ?? $payment->customer_id;
+            if ($incomingCustomerId && $incomingCustomerId !== $targetSale->customer_id) {
+                return ApiResponse::error(
+                    message: 'العميل المحدد لا يتطابق مع عميل عملية البيع',
                     statusCode: 422
                 );
             }

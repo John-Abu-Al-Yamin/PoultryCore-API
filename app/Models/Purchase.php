@@ -4,16 +4,21 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Purchase extends Model
 {
+    use SoftDeletes;
+
     protected $fillable = [
         'user_id',
         'supplier_id',
         'batch_id',
         'item_name',
+        'unit',
         'quantity',
         'unit_price',
+        'purchase_number',
         'total_price',
         'paid_amount',
         'status',
@@ -50,6 +55,23 @@ class Purchase extends Model
     public function payments()
     {
         return $this->hasMany(Payment::class);
+    }
+
+    protected static function booted(): void
+    {
+        static::restored(function (Purchase $purchase) {
+            $batch = $purchase->batch;
+            if ($batch) {
+                $batch->increment('current_quantity', $purchase->quantity);
+            }
+
+            if ($purchase->payment_type === 'credit') {
+                $remaining = $purchase->total_price - $purchase->paid_amount;
+                if ($remaining > 0 && $purchase->supplier) {
+                    $purchase->supplier->increment('total_dues', $remaining);
+                }
+            }
+        });
     }
 
     protected function remainingAmount(): Attribute

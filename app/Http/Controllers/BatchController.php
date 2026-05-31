@@ -123,6 +123,20 @@ class BatchController extends Controller
             );
         }
 
+        if ($batch->purchases()->count() > 0) {
+            return ApiResponse::error(
+                message: 'لا يمكن حذف الدفعة لوجود مشتريات مرتبطة بها',
+                statusCode: 422
+            );
+        }
+
+        if ($batch->sales()->count() > 0) {
+            return ApiResponse::error(
+                message: 'لا يمكن حذف الدفعة لوجود مبيعات مرتبطة بها',
+                statusCode: 422
+            );
+        }
+
         $batch->delete();
 
         return ApiResponse::success(

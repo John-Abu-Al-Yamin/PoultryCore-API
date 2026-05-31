@@ -24,6 +24,11 @@ class PurchaseController extends Controller
             $data['status'] = 'paid';
         }
 
+        $batch = $user->batches()->find($data['batch_id']);
+        if ($batch->status === 'closed') {
+            return ApiResponse::error(message: 'لا يمكن الشراء من دفعة مغلقة', statusCode: 422);
+        }
+
         $purchase = Purchase::create($data);
 
         if ($data['payment_type'] === 'cash') {
@@ -90,14 +95,65 @@ class PurchaseController extends Controller
             );
         }
 
+        $data = $request->validated();
+
+        // Handle payment_type change (bypasses paid status lock)
+        if (array_key_exists('payment_type', $data) && $data['payment_type'] !== $purchase->payment_type) {
+            if ($data['payment_type'] === 'cash') {
+                $remaining = $purchase->total_price - $purchase->paid_amount;
+                if ($remaining > 0) {
+                    Payment::create([
+                        'user_id' => $user->id,
+                        'type' => 'to_supplier',
+                        'supplier_id' => $purchase->supplier_id,
+                        'purchase_id' => $purchase->id,
+                        'amount' => $remaining,
+                        'payment_date' => now(),
+                        'payment_method' => 'cash',
+                    ]);
+
+                    $purchase->increment('paid_amount', $remaining);
+
+                    if ($purchase->supplier) {
+                        $purchase->supplier->decrement('total_dues', $remaining);
+                    }
+                }
+
+                $purchase->update(['payment_type' => 'cash', 'status' => 'paid']);
+
+                return ApiResponse::success(
+                    data: $purchase->fresh()->load(['supplier', 'batch', 'payments']),
+                    message: 'تم تحديث الشراء بنجاح'
+                );
+            } else {
+                $purchase->payments()
+                    ->where('type', 'to_supplier')
+                    ->where('amount', $purchase->paid_amount)
+                    ->delete();
+
+                if ($purchase->supplier) {
+                    $purchase->supplier->increment('total_dues', $purchase->total_price);
+                }
+
+                $purchase->update([
+                    'payment_type' => 'credit',
+                    'paid_amount' => 0,
+                    'status' => 'unpaid',
+                ]);
+
+                return ApiResponse::success(
+                    data: $purchase->fresh()->load(['supplier', 'batch', 'payments']),
+                    message: 'تم تحديث الشراء بنجاح'
+                );
+            }
+        }
+
         if ($purchase->status === 'paid') {
             return ApiResponse::error(
                 message: 'لا يمكن تعديل مشتريات تم تسويتها بالكامل',
                 statusCode: 422
             );
         }
-
-        $data = $request->validated();
 
         if (array_key_exists('supplier_id', $data) && $data['supplier_id'] !== $purchase->supplier_id) {
             return ApiResponse::error(
@@ -115,6 +171,7 @@ class PurchaseController extends Controller
 
         $oldQuantity = $purchase->quantity;
         $oldTotalPrice = $purchase->total_price;
+        $diff = 0;
 
         if (array_key_exists('quantity', $data) || array_key_exists('unit_price', $data)) {
             $data['total_price'] = ($data['quantity'] ?? $purchase->quantity)
@@ -128,19 +185,27 @@ class PurchaseController extends Controller
             );
         }
 
+        $batch = $purchase->batch;
+        if (array_key_exists('quantity', $data)) {
+            if ($batch && $batch->status === 'closed') {
+                return ApiResponse::error(
+                    message: 'لا يمكن تعديل الكمية في دفعة مغلقة',
+                    statusCode: 422
+                );
+            }
+            $diff = $data['quantity'] - $oldQuantity;
+        }
+
         $purchase->update($data);
 
-        if (array_key_exists('quantity', $data)) {
-            $diff = $data['quantity'] - $oldQuantity;
-            if ($diff !== 0) {
-                $purchase->batch()->increment('current_quantity', $diff);
-            }
+        if (array_key_exists('quantity', $data) && $diff !== 0) {
+            $purchase->batch()->increment('current_quantity', $diff);
         }
 
         if (array_key_exists('total_price', $data)) {
-            $diff = $data['total_price'] - $oldTotalPrice;
-            if ($diff !== 0 && $purchase->payment_type === 'credit') {
-                $purchase->supplier->increment('total_dues', $diff);
+            $totalDiff = $data['total_price'] - $oldTotalPrice;
+            if ($totalDiff !== 0 && $purchase->payment_type === 'credit') {
+                $purchase->supplier->increment('total_dues', $totalDiff);
             }
 
             $purchase->recalculateStatus();

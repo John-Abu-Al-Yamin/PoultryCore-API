@@ -4,16 +4,21 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Sale extends Model
 {
+    use SoftDeletes;
+
     protected $fillable = [
         'user_id',
         'customer_id',
         'batch_id',
         'item_name',
+        'unit',
         'quantity',
         'unit_price',
+        'sale_number',
         'total_price',
         'paid_amount',
         'status',
@@ -50,6 +55,23 @@ class Sale extends Model
     public function payments()
     {
         return $this->hasMany(Payment::class);
+    }
+
+    protected static function booted(): void
+    {
+        static::restored(function (Sale $sale) {
+            $batch = $sale->batch;
+            if ($batch) {
+                $batch->decrement('current_quantity', $sale->quantity);
+            }
+
+            if ($sale->payment_type === 'credit') {
+                $remaining = $sale->total_price - $sale->paid_amount;
+                if ($remaining > 0 && $sale->customer) {
+                    $sale->customer->increment('total_debts', $remaining);
+                }
+            }
+        });
     }
 
     protected function remainingAmount(): Attribute

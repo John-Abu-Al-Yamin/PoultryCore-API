@@ -18,9 +18,11 @@ class UpdatePurchaseRequest extends BaseApiRequest
             'supplier_id' => ['sometimes', 'required', Rule::exists('suppliers', 'id')->where('user_id', $this->user()->id)],
             'batch_id' => ['sometimes', 'required', Rule::exists('batches', 'id')->where('user_id', $this->user()->id)],
             'item_name' => ['sometimes', 'required', 'string', 'max:255'],
+            'unit' => ['sometimes', 'string', 'max:50'],
             'quantity' => ['sometimes', 'required', 'integer', 'min:1'],
             'unit_price' => ['sometimes', 'required', 'numeric', 'min:0'],
             'purchase_date' => ['sometimes', 'required', 'date'],
+            'payment_type' => ['sometimes', 'required', 'in:cash,credit'],
         ];
     }
 
