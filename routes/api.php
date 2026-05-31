@@ -3,8 +3,10 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BarnController;
 use App\Http\Controllers\BatchController;
+use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PurchaseController;
+use App\Http\Controllers\SaleController;
 use App\Http\Controllers\SupplierController;
 use Illuminate\Support\Facades\Route;
 
@@ -57,4 +59,19 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/payments/{id}', [PaymentController::class, 'show']);
     Route::put('/payments/{id}', [PaymentController::class, 'update']);
     Route::delete('/payments/{id}', [PaymentController::class, 'destroy']);
+
+    // Customer ROUTES
+    Route::get('/customers', [CustomerController::class, 'index']);
+    Route::post('/customers', [CustomerController::class, 'store']);
+    Route::get('/customers/{id}', [CustomerController::class, 'show']);
+    Route::put('/customers/{id}', [CustomerController::class, 'update']);
+    Route::delete('/customers/{id}', [CustomerController::class, 'destroy']);
+
+    // Sale ROUTES
+    Route::get('/sales', [SaleController::class, 'index']);
+    Route::post('/sales', [SaleController::class, 'store']);
+    Route::get('/sales/{id}', [SaleController::class, 'show']);
+    Route::put('/sales/{id}', [SaleController::class, 'update']);
+    Route::delete('/sales/{id}', [SaleController::class, 'destroy']);
+    
 });
