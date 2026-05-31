@@ -4,6 +4,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BarnController;
 use App\Http\Controllers\BatchController;
 use App\Http\Controllers\CustomerController;
+use App\Http\Controllers\DeathController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\SaleController;
@@ -74,5 +75,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/sales/{id}', [SaleController::class, 'show']);
     Route::put('/sales/{id}', [SaleController::class, 'update']);
     Route::delete('/sales/{id}', [SaleController::class, 'destroy']);
+
+    // Death ROUTES
+    Route::get('/deaths', [DeathController::class, 'index']);
+    Route::post('/deaths', [DeathController::class, 'store']);
+    Route::get('/deaths/{id}', [DeathController::class, 'show']);
+    Route::put('/deaths/{id}', [DeathController::class, 'update']);
+    Route::delete('/deaths/{id}', [DeathController::class, 'destroy']);
     
 });

@@ -45,4 +45,8 @@ class Batch extends Model
     {
         return $this->hasMany(Sale::class);
     }
+    public function deaths()
+    {
+        return $this->hasMany(Death::class);
+    }
 }

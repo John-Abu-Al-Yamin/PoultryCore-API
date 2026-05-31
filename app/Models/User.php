@@ -65,4 +65,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(Sale::class);
     }
+    public function deaths()
+    {
+        return $this->hasMany(Death::class);
+    }
+    
 }
