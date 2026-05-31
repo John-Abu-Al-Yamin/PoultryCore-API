@@ -15,6 +15,8 @@ class Purchase extends Model
         'quantity',
         'unit_price',
         'total_price',
+        'paid_amount',
+        'status',
         'purchase_date',
         'payment_type',
     ];
@@ -25,6 +27,7 @@ class Purchase extends Model
             'quantity' => 'integer',
             'unit_price' => 'decimal:2',
             'total_price' => 'decimal:2',
+            'paid_amount' => 'decimal:2',
             'purchase_date' => 'date',
         ];
     }
@@ -52,22 +55,20 @@ class Purchase extends Model
     protected function remainingAmount(): Attribute
     {
         return Attribute::get(function () {
-            $paid = $this->payments()->sum('amount');
-            return max(0, $this->total_price - $paid);
+            return max(0, $this->total_price - $this->paid_amount);
         });
     }
 
-    protected function paymentStatus(): Attribute
+    public function recalculateStatus(): void
     {
-        return Attribute::get(function () {
-            $paid = $this->payments()->sum('amount');
-            if ($paid <= 0) {
-                return 'unpaid';
-            }
-            if ($paid >= $this->total_price) {
-                return 'paid';
-            }
-            return 'partial';
-        });
+        if ($this->paid_amount <= 0) {
+            $this->status = 'unpaid';
+        } elseif ($this->paid_amount >= $this->total_price) {
+            $this->status = 'paid';
+        } else {
+            $this->status = 'partial';
+        }
+
+        $this->save();
     }
 }

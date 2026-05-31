@@ -22,6 +22,10 @@ class PurchaseController extends Controller
         $purchase = Purchase::create($data);
 
         if ($data['payment_type'] === 'cash') {
+            $purchase->paid_amount = $data['total_price'];
+            $purchase->status = 'paid';
+            $purchase->save();
+
             Payment::create([
                 'user_id' => $user->id,
                 'type' => 'to_supplier',
@@ -58,7 +62,7 @@ class PurchaseController extends Controller
         $user = $request->user();
         $purchase = $user->purchases()->with(['supplier', 'batch', 'payments'])->find($id);
 
-        if (!$purchase) {
+        if (! $purchase) {
             return ApiResponse::error(
                 message: 'الشراء غير موجود',
                 statusCode: 404
@@ -76,7 +80,7 @@ class PurchaseController extends Controller
         $user = $request->user();
         $purchase = $user->purchases()->find($id);
 
-        if (!$purchase) {
+        if (! $purchase) {
             return ApiResponse::error(
                 message: 'الشراء غير موجود',
                 statusCode: 404
@@ -103,7 +107,7 @@ class PurchaseController extends Controller
         $user = $request->user();
         $purchase = $user->purchases()->find($id);
 
-        if (!$purchase) {
+        if (! $purchase) {
             return ApiResponse::error(
                 message: 'الشراء غير موجود',
                 statusCode: 404

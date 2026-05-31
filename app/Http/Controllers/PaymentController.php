@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\Payment\StorePaymentRequest;
 use App\Http\Requests\Payment\UpdatePaymentRequest;
 use App\Http\Responses\ApiResponse;
+use App\Models\Purchase;
 use Illuminate\Http\Request;
 
 class PaymentController extends Controller
@@ -26,7 +27,25 @@ class PaymentController extends Controller
         $user = $request->user();
         $data['user_id'] = $user->id;
 
+        if (isset($data['purchase_id'])) {
+            $purchase = Purchase::find($data['purchase_id']);
+            if ($purchase && $purchase->status === 'paid') {
+                return ApiResponse::error(
+                    message: 'لا يمكن إضافة دفع لمشتريات تم تسويتها بالكامل',
+                    statusCode: 422
+                );
+            }
+        }
+
         $payment = $user->payments()->create($data);
+
+        if ($payment->purchase_id) {
+            $purchase = Purchase::find($payment->purchase_id);
+            if ($purchase) {
+                $purchase->increment('paid_amount', $payment->amount);
+                $purchase->recalculateStatus();
+            }
+        }
 
         return ApiResponse::success(
             data: $payment,
@@ -40,7 +59,7 @@ class PaymentController extends Controller
         $user = $request->user();
         $payment = $user->payments()->with(['supplier', 'purchase'])->find($id);
 
-        if (!$payment) {
+        if (! $payment) {
             return ApiResponse::error(
                 message: 'الدفع غير موجود',
                 statusCode: 404
@@ -58,15 +77,35 @@ class PaymentController extends Controller
         $user = $request->user();
         $payment = $user->payments()->find($id);
 
-        if (!$payment) {
+        if (! $payment) {
             return ApiResponse::error(
                 message: 'الدفع غير موجود',
                 statusCode: 404
             );
         }
 
+        if ($payment->purchase_id) {
+            $purchase = Purchase::find($payment->purchase_id);
+            if ($purchase && $purchase->status === 'paid') {
+                return ApiResponse::error(
+                    message: 'لا يمكن تعديل دفع لمشتريات تم تسويتها بالكامل',
+                    statusCode: 422
+                );
+            }
+        }
+
         $data = $request->validated();
+        $oldAmount = $payment->amount;
         $payment->update($data);
+
+        if ($payment->purchase_id && isset($data['amount'])) {
+            $purchase = Purchase::find($payment->purchase_id);
+            if ($purchase) {
+                $diff = $data['amount'] - $oldAmount;
+                $purchase->increment('paid_amount', $diff);
+                $purchase->recalculateStatus();
+            }
+        }
 
         return ApiResponse::success(
             data: $payment,
@@ -79,14 +118,30 @@ class PaymentController extends Controller
         $user = $request->user();
         $payment = $user->payments()->find($id);
 
-        if (!$payment) {
+        if (! $payment) {
             return ApiResponse::error(
                 message: 'الدفع غير موجود',
                 statusCode: 404
             );
         }
 
+        $purchase = null;
+        if ($payment->purchase_id) {
+            $purchase = Purchase::find($payment->purchase_id);
+            if ($purchase && $purchase->status === 'paid') {
+                return ApiResponse::error(
+                    message: 'لا يمكن حذف دفع لمشتريات تم تسويتها بالكامل',
+                    statusCode: 422
+                );
+            }
+        }
+
         $payment->delete();
+
+        if ($purchase) {
+            $purchase->decrement('paid_amount', $payment->amount);
+            $purchase->recalculateStatus();
+        }
 
         return ApiResponse::success(
             message: 'تم حذف الدفع بنجاح'
