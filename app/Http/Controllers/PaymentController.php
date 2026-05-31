@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Http\Requests\Payment\StorePaymentRequest;
 use App\Http\Requests\Payment\UpdatePaymentRequest;
 use App\Http\Responses\ApiResponse;
+use App\Models\Customer;
 use App\Models\Purchase;
+use App\Models\Sale;
 use App\Models\Supplier;
 use Illuminate\Http\Request;
 
@@ -14,7 +16,7 @@ class PaymentController extends Controller
     public function index(Request $request)
     {
         $user = $request->user();
-        $payments = $user->payments()->with(['supplier', 'purchase'])->get();
+        $payments = $user->payments()->with(['supplier', 'purchase', 'customer', 'sale'])->get();
 
         return ApiResponse::success(
             data: $payments,
@@ -28,7 +30,7 @@ class PaymentController extends Controller
         $user = $request->user();
         $data['user_id'] = $user->id;
 
-        if (isset($data['purchase_id'])) {
+        if ($data['type'] === 'to_supplier' && isset($data['purchase_id'])) {
             $purchase = Purchase::find($data['purchase_id']);
             if (! $purchase) {
                 return ApiResponse::error(message: 'الشراء غير موجود', statusCode: 404);
@@ -42,6 +44,25 @@ class PaymentController extends Controller
             if ($data['amount'] > $purchase->total_price - $purchase->paid_amount) {
                 return ApiResponse::error(
                     message: 'المبلغ يتجاوز القيمة المتبقية المطلوب سدادها',
+                    statusCode: 422
+                );
+            }
+        }
+
+        if ($data['type'] === 'from_customer' && isset($data['sale_id'])) {
+            $sale = Sale::find($data['sale_id']);
+            if (! $sale) {
+                return ApiResponse::error(message: 'البيع غير موجود', statusCode: 404);
+            }
+            if ($sale->status === 'paid') {
+                return ApiResponse::error(
+                    message: 'لا يمكن إضافة دفع لمبيعات تم تسويتها بالكامل',
+                    statusCode: 422
+                );
+            }
+            if ($data['amount'] > $sale->total_price - $sale->paid_amount) {
+                return ApiResponse::error(
+                    message: 'المبلغ يتجاوز القيمة المتبقية المطلوب تحصيلها',
                     statusCode: 422
                 );
             }
@@ -64,6 +85,21 @@ class PaymentController extends Controller
             }
         }
 
+        if ($payment->sale_id) {
+            $sale = Sale::find($payment->sale_id);
+            if ($sale) {
+                $sale->increment('paid_amount', $payment->amount);
+                $sale->recalculateStatus();
+            }
+        }
+
+        if ($payment->customer_id) {
+            $customer = Customer::find($payment->customer_id);
+            if ($customer) {
+                $customer->update(['total_debts' => max(0, $customer->total_debts - $payment->amount)]);
+            }
+        }
+
         return ApiResponse::success(
             data: $payment,
             message: 'تم تسجيل الدفع بنجاح',
@@ -74,7 +110,7 @@ class PaymentController extends Controller
     public function show(Request $request, int $id)
     {
         $user = $request->user();
-        $payment = $user->payments()->with(['supplier', 'purchase'])->find($id);
+        $payment = $user->payments()->with(['supplier', 'purchase', 'customer', 'sale'])->find($id);
 
         if (! $payment) {
             return ApiResponse::error(
@@ -104,14 +140,12 @@ class PaymentController extends Controller
         $data = $request->validated();
 
         $oldAmount = $payment->amount;
-        $oldPurchaseId = $payment->purchase_id;
-        $oldSupplierId = $payment->supplier_id;
-
         $newAmount = $data['amount'] ?? $oldAmount;
-        $newPurchaseId = $data['purchase_id'] ?? $oldPurchaseId;
-        $newSupplierId = $data['supplier_id'] ?? $oldSupplierId;
 
-        // Block if the linked purchase is paid
+        // --- Purchase validation ---
+        $oldPurchaseId = $payment->purchase_id;
+        $newPurchaseId = $data['purchase_id'] ?? $oldPurchaseId;
+
         if ($newPurchaseId) {
             $targetPurchase = Purchase::find($newPurchaseId);
             if (! $targetPurchase) {
@@ -123,7 +157,6 @@ class PaymentController extends Controller
                     statusCode: 422
                 );
             }
-            // Prevent overpayment
             $projectedPaid = $targetPurchase->paid_amount;
             if ($newPurchaseId === $oldPurchaseId) {
                 $projectedPaid = $projectedPaid - $oldAmount + $newAmount;
@@ -138,11 +171,45 @@ class PaymentController extends Controller
             }
         }
 
+        // --- Sale validation ---
+        $oldSaleId = $payment->sale_id;
+        $newSaleId = $data['sale_id'] ?? $oldSaleId;
+
+        if ($newSaleId) {
+            $targetSale = Sale::find($newSaleId);
+            if (! $targetSale) {
+                return ApiResponse::error(message: 'البيع غير موجود', statusCode: 404);
+            }
+            if ($targetSale->status === 'paid') {
+                return ApiResponse::error(
+                    message: 'لا يمكن تعديل دفع لمبيعات تم تسويتها بالكامل',
+                    statusCode: 422
+                );
+            }
+            $projectedPaid = $targetSale->paid_amount;
+            if ($newSaleId === $oldSaleId) {
+                $projectedPaid = $projectedPaid - $oldAmount + $newAmount;
+            } else {
+                $projectedPaid += $newAmount;
+            }
+            if ($projectedPaid > $targetSale->total_price) {
+                return ApiResponse::error(
+                    message: 'المبلغ يتجاوز القيمة المتبقية المطلوب تحصيلها',
+                    statusCode: 422
+                );
+            }
+        }
+
+        $oldSupplierId = $payment->supplier_id;
+        $newSupplierId = $data['supplier_id'] ?? $oldSupplierId;
+
+        $oldCustomerId = $payment->customer_id;
+        $newCustomerId = $data['customer_id'] ?? $oldCustomerId;
+
         $payment->update($data);
 
-        // Adjust purchase paid_amount
+        // --- Adjust purchase paid_amount ---
         if ($oldPurchaseId && $newPurchaseId && $oldPurchaseId !== $newPurchaseId) {
-            // Purchase changed: unwind old, apply new
             $oldPurchase = Purchase::find($oldPurchaseId);
             if ($oldPurchase) {
                 $oldPurchase->update(['paid_amount' => max(0, $oldPurchase->paid_amount - $oldAmount)]);
@@ -154,21 +221,18 @@ class PaymentController extends Controller
                 $newPurchase->recalculateStatus();
             }
         } elseif ($newPurchaseId && $newAmount !== $oldAmount) {
-            // Same purchase, amount changed
             $purchase = Purchase::find($newPurchaseId);
             if ($purchase) {
                 $purchase->update(['paid_amount' => max(0, $purchase->paid_amount + $newAmount - $oldAmount)]);
                 $purchase->recalculateStatus();
             }
         } elseif ($oldPurchaseId && ! $newPurchaseId) {
-            // Purchase removed: unwind old
             $oldPurchase = Purchase::find($oldPurchaseId);
             if ($oldPurchase) {
                 $oldPurchase->update(['paid_amount' => max(0, $oldPurchase->paid_amount - $oldAmount)]);
                 $oldPurchase->recalculateStatus();
             }
         } elseif (! $oldPurchaseId && $newPurchaseId) {
-            // Purchase added: apply new
             $newPurchase = Purchase::find($newPurchaseId);
             if ($newPurchase) {
                 $newPurchase->increment('paid_amount', $newAmount);
@@ -176,7 +240,39 @@ class PaymentController extends Controller
             }
         }
 
-        // Adjust supplier total_dues: unwind old effect, apply new effect
+        // --- Adjust sale paid_amount ---
+        if ($oldSaleId && $newSaleId && $oldSaleId !== $newSaleId) {
+            $oldSale = Sale::find($oldSaleId);
+            if ($oldSale) {
+                $oldSale->update(['paid_amount' => max(0, $oldSale->paid_amount - $oldAmount)]);
+                $oldSale->recalculateStatus();
+            }
+            $newSale = Sale::find($newSaleId);
+            if ($newSale) {
+                $newSale->increment('paid_amount', $newAmount);
+                $newSale->recalculateStatus();
+            }
+        } elseif ($newSaleId && $newAmount !== $oldAmount) {
+            $sale = Sale::find($newSaleId);
+            if ($sale) {
+                $sale->update(['paid_amount' => max(0, $sale->paid_amount + $newAmount - $oldAmount)]);
+                $sale->recalculateStatus();
+            }
+        } elseif ($oldSaleId && ! $newSaleId) {
+            $oldSale = Sale::find($oldSaleId);
+            if ($oldSale) {
+                $oldSale->update(['paid_amount' => max(0, $oldSale->paid_amount - $oldAmount)]);
+                $oldSale->recalculateStatus();
+            }
+        } elseif (! $oldSaleId && $newSaleId) {
+            $newSale = Sale::find($newSaleId);
+            if ($newSale) {
+                $newSale->increment('paid_amount', $newAmount);
+                $newSale->recalculateStatus();
+            }
+        }
+
+        // --- Adjust supplier total_dues ---
         if ($oldSupplierId) {
             $oldSupplier = Supplier::find($oldSupplierId);
             if ($oldSupplier) {
@@ -187,6 +283,20 @@ class PaymentController extends Controller
             $newSupplier = Supplier::find($newSupplierId);
             if ($newSupplier) {
                 $newSupplier->update(['total_dues' => max(0, $newSupplier->total_dues - $newAmount)]);
+            }
+        }
+
+        // --- Adjust customer total_debts ---
+        if ($oldCustomerId) {
+            $oldCustomer = Customer::find($oldCustomerId);
+            if ($oldCustomer) {
+                $oldCustomer->update(['total_debts' => $oldCustomer->total_debts + $oldAmount]);
+            }
+        }
+        if ($newCustomerId) {
+            $newCustomer = Customer::find($newCustomerId);
+            if ($newCustomer) {
+                $newCustomer->update(['total_debts' => max(0, $newCustomer->total_debts - $newAmount)]);
             }
         }
 
@@ -219,6 +329,17 @@ class PaymentController extends Controller
             }
         }
 
+        $sale = null;
+        if ($payment->sale_id) {
+            $sale = Sale::find($payment->sale_id);
+            if ($sale && $sale->status === 'paid') {
+                return ApiResponse::error(
+                    message: 'لا يمكن حذف دفع لمبيعات تم تسويتها بالكامل',
+                    statusCode: 422
+                );
+            }
+        }
+
         $payment->delete();
 
         if ($purchase) {
@@ -228,6 +349,15 @@ class PaymentController extends Controller
 
         if ($payment->supplier_id) {
             Supplier::find($payment->supplier_id)?->increment('total_dues', $payment->amount);
+        }
+
+        if ($sale) {
+            $sale->update(['paid_amount' => max(0, $sale->paid_amount - $payment->amount)]);
+            $sale->recalculateStatus();
+        }
+
+        if ($payment->customer_id) {
+            Customer::find($payment->customer_id)?->increment('total_debts', $payment->amount);
         }
 
         return ApiResponse::success(

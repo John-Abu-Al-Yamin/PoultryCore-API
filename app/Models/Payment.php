@@ -11,6 +11,8 @@ class Payment extends Model
         'type',
         'supplier_id',
         'purchase_id',
+        'customer_id',
+        'sale_id',
         'amount',
         'payment_date',
         'payment_method',
@@ -38,5 +40,15 @@ class Payment extends Model
     public function purchase()
     {
         return $this->belongsTo(Purchase::class);
+    }
+
+    public function customer()
+    {
+        return $this->belongsTo(Customer::class);
+    }
+
+    public function sale()
+    {
+        return $this->belongsTo(Sale::class);
     }
 }

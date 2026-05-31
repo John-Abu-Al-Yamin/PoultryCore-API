@@ -66,6 +66,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/customers/{id}', [CustomerController::class, 'show']);
     Route::put('/customers/{id}', [CustomerController::class, 'update']);
     Route::delete('/customers/{id}', [CustomerController::class, 'destroy']);
+    Route::put('/customers/{id}/sync-debts', [CustomerController::class, 'syncDebts']);
 
     // Sale ROUTES
     Route::get('/sales', [SaleController::class, 'index']);

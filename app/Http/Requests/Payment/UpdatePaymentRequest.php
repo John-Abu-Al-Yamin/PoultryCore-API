@@ -15,9 +15,11 @@ class UpdatePaymentRequest extends BaseApiRequest
     public function rules(): array
     {
         return [
-            'type' => ['sometimes', 'required', 'in:to_supplier'],
+            'type' => ['sometimes', 'required', 'in:to_supplier,from_customer'],
             'supplier_id' => ['sometimes', 'nullable', Rule::exists('suppliers', 'id')->where('user_id', $this->user()->id)],
             'purchase_id' => ['sometimes', 'nullable', Rule::exists('purchases', 'id')->where('user_id', $this->user()->id)],
+            'customer_id' => ['sometimes', 'nullable', Rule::exists('customers', 'id')->where('user_id', $this->user()->id)],
+            'sale_id' => ['sometimes', 'nullable', Rule::exists('sales', 'id')->where('user_id', $this->user()->id)],
             'amount' => ['sometimes', 'required', 'numeric', 'gt:0'],
             'payment_date' => ['sometimes', 'required', 'date'],
             'payment_method' => ['sometimes', 'required', 'string', 'max:255'],
@@ -31,8 +33,10 @@ class UpdatePaymentRequest extends BaseApiRequest
             'type.in' => 'نوع الدفع غير صالح.',
 
             'supplier_id.exists' => 'المورد غير موجود.',
-
             'purchase_id.exists' => 'عملية الشراء غير موجودة.',
+
+            'customer_id.exists' => 'العميل غير موجود.',
+            'sale_id.exists' => 'عملية البيع غير موجودة.',
 
             'amount.numeric' => 'المبلغ يجب أن يكون رقمًا.',
             'amount.gt' => 'المبلغ يجب أن يكون أكبر من 0.',

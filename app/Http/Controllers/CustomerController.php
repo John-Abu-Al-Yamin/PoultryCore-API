@@ -84,10 +84,37 @@ class CustomerController extends Controller
             );
         }
 
+        if ($customer->sales()->count() > 0) {
+            return ApiResponse::error(
+                message: 'لا يمكن حذف عميل له مبيعات مسجلة',
+                statusCode: 422
+            );
+        }
+
         $customer->delete();
 
         return ApiResponse::success(
             message: 'تم حذف العميل بنجاح'
+        );
+    }
+
+    public function syncDebts(Request $request, int $id)
+    {
+        $user = $request->user();
+        $customer = $user->customers()->find($id);
+
+        if (! $customer) {
+            return ApiResponse::error(
+                message: 'العميل غير موجود',
+                statusCode: 404
+            );
+        }
+
+        $customer->recalculateTotalDebts();
+
+        return ApiResponse::success(
+            data: $customer,
+            message: 'تم تحديث المديونية بنجاح'
         );
     }
 }
