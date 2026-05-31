@@ -6,6 +6,7 @@ use App\Http\Requests\Payment\StorePaymentRequest;
 use App\Http\Requests\Payment\UpdatePaymentRequest;
 use App\Http\Responses\ApiResponse;
 use App\Models\Purchase;
+use App\Models\Supplier;
 use Illuminate\Http\Request;
 
 class PaymentController extends Controller
@@ -29,9 +30,18 @@ class PaymentController extends Controller
 
         if (isset($data['purchase_id'])) {
             $purchase = Purchase::find($data['purchase_id']);
-            if ($purchase && $purchase->status === 'paid') {
+            if (! $purchase) {
+                return ApiResponse::error(message: 'الشراء غير موجود', statusCode: 404);
+            }
+            if ($purchase->status === 'paid') {
                 return ApiResponse::error(
                     message: 'لا يمكن إضافة دفع لمشتريات تم تسويتها بالكامل',
+                    statusCode: 422
+                );
+            }
+            if ($data['amount'] > $purchase->total_price - $purchase->paid_amount) {
+                return ApiResponse::error(
+                    message: 'المبلغ يتجاوز القيمة المتبقية المطلوب سدادها',
                     statusCode: 422
                 );
             }
@@ -45,6 +55,10 @@ class PaymentController extends Controller
                 $purchase->increment('paid_amount', $payment->amount);
                 $purchase->recalculateStatus();
             }
+        }
+
+        if ($payment->supplier_id) {
+            Supplier::find($payment->supplier_id)?->decrement('total_dues', $payment->amount);
         }
 
         return ApiResponse::success(
@@ -84,27 +98,87 @@ class PaymentController extends Controller
             );
         }
 
-        if ($payment->purchase_id) {
-            $purchase = Purchase::find($payment->purchase_id);
-            if ($purchase && $purchase->status === 'paid') {
+        $data = $request->validated();
+
+        $oldAmount = $payment->amount;
+        $oldPurchaseId = $payment->purchase_id;
+        $oldSupplierId = $payment->supplier_id;
+
+        $newAmount = $data['amount'] ?? $oldAmount;
+        $newPurchaseId = $data['purchase_id'] ?? $oldPurchaseId;
+        $newSupplierId = $data['supplier_id'] ?? $oldSupplierId;
+
+        // Block if the linked purchase is paid
+        if ($newPurchaseId) {
+            $targetPurchase = Purchase::find($newPurchaseId);
+            if (! $targetPurchase) {
+                return ApiResponse::error(message: 'الشراء غير موجود', statusCode: 404);
+            }
+            if ($targetPurchase->status === 'paid') {
                 return ApiResponse::error(
                     message: 'لا يمكن تعديل دفع لمشتريات تم تسويتها بالكامل',
                     statusCode: 422
                 );
             }
+            // Prevent overpayment
+            $projectedPaid = $targetPurchase->paid_amount;
+            if ($newPurchaseId === $oldPurchaseId) {
+                $projectedPaid = $projectedPaid - $oldAmount + $newAmount;
+            } else {
+                $projectedPaid += $newAmount;
+            }
+            if ($projectedPaid > $targetPurchase->total_price) {
+                return ApiResponse::error(
+                    message: 'المبلغ يتجاوز القيمة المتبقية المطلوب سدادها',
+                    statusCode: 422
+                );
+            }
         }
 
-        $data = $request->validated();
-        $oldAmount = $payment->amount;
         $payment->update($data);
 
-        if ($payment->purchase_id && isset($data['amount'])) {
-            $purchase = Purchase::find($payment->purchase_id);
+        // Adjust purchase paid_amount
+        if ($oldPurchaseId && $newPurchaseId && $oldPurchaseId !== $newPurchaseId) {
+            // Purchase changed: unwind old, apply new
+            $oldPurchase = Purchase::find($oldPurchaseId);
+            if ($oldPurchase) {
+                $oldPurchase->decrement('paid_amount', $oldAmount);
+                $oldPurchase->recalculateStatus();
+            }
+            $newPurchase = Purchase::find($newPurchaseId);
+            if ($newPurchase) {
+                $newPurchase->increment('paid_amount', $newAmount);
+                $newPurchase->recalculateStatus();
+            }
+        } elseif ($newPurchaseId && $newAmount !== $oldAmount) {
+            // Same purchase, amount changed
+            $purchase = Purchase::find($newPurchaseId);
             if ($purchase) {
-                $diff = $data['amount'] - $oldAmount;
-                $purchase->increment('paid_amount', $diff);
+                $purchase->increment('paid_amount', $newAmount - $oldAmount);
                 $purchase->recalculateStatus();
             }
+        } elseif ($oldPurchaseId && ! $newPurchaseId) {
+            // Purchase removed: unwind old
+            $oldPurchase = Purchase::find($oldPurchaseId);
+            if ($oldPurchase) {
+                $oldPurchase->decrement('paid_amount', $oldAmount);
+                $oldPurchase->recalculateStatus();
+            }
+        } elseif (! $oldPurchaseId && $newPurchaseId) {
+            // Purchase added: apply new
+            $newPurchase = Purchase::find($newPurchaseId);
+            if ($newPurchase) {
+                $newPurchase->increment('paid_amount', $newAmount);
+                $newPurchase->recalculateStatus();
+            }
+        }
+
+        // Adjust supplier total_dues: unwind old effect, apply new effect
+        if ($oldSupplierId) {
+            Supplier::find($oldSupplierId)?->increment('total_dues', $oldAmount);
+        }
+        if ($newSupplierId) {
+            Supplier::find($newSupplierId)?->decrement('total_dues', $newAmount);
         }
 
         return ApiResponse::success(
@@ -141,6 +215,10 @@ class PaymentController extends Controller
         if ($purchase) {
             $purchase->decrement('paid_amount', $payment->amount);
             $purchase->recalculateStatus();
+        }
+
+        if ($payment->supplier_id) {
+            Supplier::find($payment->supplier_id)?->increment('total_dues', $payment->amount);
         }
 
         return ApiResponse::success(

@@ -16,6 +16,7 @@ class SupplierController extends Controller
         $data = $request->validated();
         $user = $request->user();
         $supplier = $user->suppliers()->create($data);
+
         return ApiResponse::success(
             data: $supplier,
             message: 'تم حفظ المورد بنجاح',
@@ -39,7 +40,7 @@ class SupplierController extends Controller
         $user = $request->user();
         $supplier = $user->suppliers()->find($id);
 
-        if (!$supplier) {
+        if (! $supplier) {
             return ApiResponse::error(
                 message: 'المورد غير موجود',
                 statusCode: 404
@@ -57,7 +58,7 @@ class SupplierController extends Controller
         $user = $request->user();
         $supplier = $user->suppliers()->find($id);
 
-        if (!$supplier) {
+        if (! $supplier) {
             return ApiResponse::error(
                 message: 'المورد غير موجود',
                 statusCode: 404
@@ -78,7 +79,7 @@ class SupplierController extends Controller
         $user = $request->user();
         $supplier = $user->suppliers()->find($id);
 
-        if (!$supplier) {
+        if (! $supplier) {
             return ApiResponse::error(
                 message: 'المورد غير موجود',
                 statusCode: 404
@@ -89,6 +90,26 @@ class SupplierController extends Controller
 
         return ApiResponse::success(
             message: 'تم حذف المورد بنجاح'
+        );
+    }
+
+    public function syncDues(Request $request, int $id)
+    {
+        $user = $request->user();
+        $supplier = $user->suppliers()->find($id);
+
+        if (! $supplier) {
+            return ApiResponse::error(
+                message: 'المورد غير موجود',
+                statusCode: 404
+            );
+        }
+
+        $supplier->recalculateTotalDues();
+
+        return ApiResponse::success(
+            data: $supplier,
+            message: 'تم تحديث المديونية بنجاح'
         );
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 
 class Supplier extends Model
@@ -11,7 +12,7 @@ class Supplier extends Model
         'name',
         'phone',
         'address',
-        'total_dues'
+        'total_dues',
     ];
 
     protected $casts = [
@@ -31,5 +32,20 @@ class Supplier extends Model
     public function payments()
     {
         return $this->hasMany(Payment::class);
+    }
+
+    public function recalculateTotalDues(): static
+    {
+        $this->total_dues = $this->purchases()->sum('total_price') - $this->purchases()->sum('paid_amount');
+        $this->save();
+
+        return $this;
+    }
+
+    protected function duesBalance(): Attribute
+    {
+        return Attribute::get(function () {
+            return $this->purchases()->sum('total_price') - $this->purchases()->sum('paid_amount');
+        });
     }
 }

@@ -48,6 +48,7 @@ Route::middleware("auth:sanctum")->group(function () {
     Route::get("/suppliers/{id}", [SupplierController::class, "show"]);
     Route::put("/suppliers/{id}", [SupplierController::class, "update"]);
     Route::delete("/suppliers/{id}", [SupplierController::class, "destroy"]);
+    Route::put("/suppliers/{id}/sync-dues", [SupplierController::class, "syncDues"]);
 
     // PURCHASE ROUTES
     Route::get("/purchases", [PurchaseController::class, "index"]);

@@ -19,13 +19,14 @@ class PurchaseController extends Controller
         $data['user_id'] = $user->id;
         $data['total_price'] = $data['total_price'] ?? ($data['quantity'] * $data['unit_price']);
 
+        if ($data['payment_type'] === 'cash') {
+            $data['paid_amount'] = $data['total_price'];
+            $data['status'] = 'paid';
+        }
+
         $purchase = Purchase::create($data);
 
         if ($data['payment_type'] === 'cash') {
-            $purchase->paid_amount = $data['total_price'];
-            $purchase->status = 'paid';
-            $purchase->save();
-
             Payment::create([
                 'user_id' => $user->id,
                 'type' => 'to_supplier',
@@ -35,6 +36,8 @@ class PurchaseController extends Controller
                 'payment_date' => $purchase->purchase_date,
                 'payment_method' => 'cash',
             ]);
+        } else {
+            $purchase->supplier->increment('total_dues', $purchase->total_price);
         }
 
         $purchase->batch()->increment('current_quantity', $purchase->quantity);
@@ -87,6 +90,13 @@ class PurchaseController extends Controller
             );
         }
 
+        if ($purchase->status === 'paid') {
+            return ApiResponse::error(
+                message: 'لا يمكن تعديل مشتريات تم تسويتها بالكامل',
+                statusCode: 422
+            );
+        }
+
         $data = $request->validated();
 
         if (array_key_exists('quantity', $data) || array_key_exists('unit_price', $data)) {
@@ -95,6 +105,10 @@ class PurchaseController extends Controller
         }
 
         $purchase->update($data);
+
+        if (array_key_exists('total_price', $data)) {
+            $purchase->recalculateStatus();
+        }
 
         return ApiResponse::success(
             data: $purchase,
@@ -112,6 +126,17 @@ class PurchaseController extends Controller
                 message: 'الشراء غير موجود',
                 statusCode: 404
             );
+        }
+
+        if ($purchase->payments()->count() > 0) {
+            return ApiResponse::error(
+                message: 'لا يمكن حذف مشتريات لها مدفوعات مسجلة',
+                statusCode: 422
+            );
+        }
+
+        if ($purchase->payment_type === 'credit') {
+            $purchase->supplier->decrement('total_dues', $purchase->total_price - $purchase->paid_amount);
         }
 
         $purchase->batch()->decrement('current_quantity', $purchase->quantity);

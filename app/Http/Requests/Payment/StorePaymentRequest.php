@@ -3,7 +3,6 @@
 namespace App\Http\Requests\Payment;
 
 use App\Http\Requests\BaseApiRequest;
-use Illuminate\Support\Facades\Auth;
 
 class StorePaymentRequest extends BaseApiRequest
 {
@@ -18,7 +17,7 @@ class StorePaymentRequest extends BaseApiRequest
             'type' => ['required', 'in:to_supplier'],
             'supplier_id' => ['nullable', 'required_if:type,to_supplier', 'exists:suppliers,id'],
             'purchase_id' => ['nullable', 'exists:purchases,id'],
-            'amount' => ['required', 'numeric', 'min:0'],
+            'amount' => ['required', 'numeric', 'gt:0'],
             'payment_date' => ['required', 'date'],
             'payment_method' => ['required', 'string', 'max:255'],
             'notes' => ['nullable', 'string'],
@@ -38,7 +37,7 @@ class StorePaymentRequest extends BaseApiRequest
 
             'amount.required' => 'المبلغ مطلوب.',
             'amount.numeric' => 'المبلغ يجب أن يكون رقمًا.',
-            'amount.min' => 'المبلغ يجب أن يكون أكبر من أو يساوي 0.',
+            'amount.gt' => 'المبلغ يجب أن يكون أكبر من 0.',
 
             'payment_date.required' => 'تاريخ الدفع مطلوب.',
             'payment_date.date' => 'تاريخ الدفع غير صالح.',
