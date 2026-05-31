@@ -6,7 +6,6 @@ use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RegisterRequest;
 use App\Http\Responses\ApiResponse;
 use App\Models\User;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
@@ -19,6 +18,7 @@ class AuthController extends Controller
 
         $user = User::create($data);
         $token = $user->createToken('auth_token')->plainTextToken;
+
         return ApiResponse::success(
             data: [
                 'user' => $user,
@@ -34,8 +34,7 @@ class AuthController extends Controller
 
         $user = User::where('phone', $data['phone'])->first();
 
-
-        if ( !$user || !Hash::check($data['password'], $user->password)) {
+        if (! $user || ! Hash::check($data['password'], $user->password)) {
 
             return ApiResponse::error(
                 message: 'بيانات الدخول غير صحيحة',
@@ -43,23 +42,22 @@ class AuthController extends Controller
                 errors: [
                     [
                         'field' => 'password',
-                        'message' => 'بيانات الدخول غير صحيحة'
-                    ]
+                        'message' => 'بيانات الدخول غير صحيحة',
+                    ],
                 ]
             );
         }
 
         $token = $user->createToken('auth_token')->plainTextToken;
 
-
         return ApiResponse::success(
             data: [
                 'user' => $user,
-                'token' => $token
+                'token' => $token,
             ],
             message: 'تم تسجيل الدخول بنجاح'
         );
-        
+
     }
 
     public function logout(Request $request)
@@ -79,6 +77,4 @@ class AuthController extends Controller
             message: 'بيانات المستخدم'
         );
     }
-
-
 }

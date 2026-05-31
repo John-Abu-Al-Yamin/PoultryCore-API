@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Purchase;
 
 use App\Http\Requests\BaseApiRequest;
+use Illuminate\Validation\Rule;
 
 class StorePurchaseRequest extends BaseApiRequest
 {
@@ -16,16 +17,15 @@ class StorePurchaseRequest extends BaseApiRequest
         return [
             'supplier_id' => [
                 'required',
-                'exists:suppliers,id',
+                Rule::exists('suppliers', 'id')->where('user_id', $this->user()->id),
             ],
             'batch_id' => [
                 'required',
-                'exists:batches,id',
+                Rule::exists('batches', 'id')->where('user_id', $this->user()->id),
             ],
             'item_name' => ['required', 'string', 'max:255'],
             'quantity' => ['required', 'integer', 'min:1'],
             'unit_price' => ['required', 'numeric', 'min:0'],
-            // 'total_price' => ['required', 'numeric', 'min:0'],
             'purchase_date' => ['required', 'date'],
             'payment_type' => ['required', 'in:cash,credit'],
         ];
@@ -49,10 +49,6 @@ class StorePurchaseRequest extends BaseApiRequest
             'unit_price.required' => 'سعر الوحدة مطلوب.',
             'unit_price.numeric' => 'سعر الوحدة يجب أن يكون رقمًا.',
             'unit_price.min' => 'سعر الوحدة يجب أن يكون أكبر من أو يساوي 0.',
-
-            'total_price.required' => 'السعر الإجمالي مطلوب.',
-            'total_price.numeric' => 'السعر الإجمالي يجب أن يكون رقمًا.',
-            'total_price.min' => 'السعر الإجمالي يجب أن يكون أكبر من أو يساوي 0.',
 
             'purchase_date.required' => 'تاريخ الشراء مطلوب.',
             'purchase_date.date' => 'تاريخ الشراء غير صالح.',

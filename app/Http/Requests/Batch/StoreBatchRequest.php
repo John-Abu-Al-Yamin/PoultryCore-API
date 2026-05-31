@@ -3,7 +3,6 @@
 namespace App\Http\Requests\Batch;
 
 use App\Http\Requests\BaseApiRequest;
-use App\Models\Barn;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 
@@ -38,7 +37,6 @@ class StoreBatchRequest extends BaseApiRequest
             'notes' => ['nullable', 'string'],
         ];
     }
-
 
     public function messages(): array
     {

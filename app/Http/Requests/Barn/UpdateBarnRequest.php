@@ -21,7 +21,7 @@ class UpdateBarnRequest extends BaseApiRequest
                 'string',
                 'max:255',
                 Rule::unique('barns')
-                    ->where(fn($q) => $q->where('user_id', auth()->id()))
+                    ->where(fn ($q) => $q->where('user_id', auth()->id()))
                     ->ignore($this->route('id')),
             ],
 

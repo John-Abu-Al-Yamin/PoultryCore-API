@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Payment;
 
 use App\Http\Requests\BaseApiRequest;
+use Illuminate\Validation\Rule;
 
 class StorePaymentRequest extends BaseApiRequest
 {
@@ -15,8 +16,8 @@ class StorePaymentRequest extends BaseApiRequest
     {
         return [
             'type' => ['required', 'in:to_supplier'],
-            'supplier_id' => ['nullable', 'required_if:type,to_supplier', 'exists:suppliers,id'],
-            'purchase_id' => ['nullable', 'exists:purchases,id'],
+            'supplier_id' => ['nullable', 'required_if:type,to_supplier', Rule::exists('suppliers', 'id')->where('user_id', $this->user()->id)],
+            'purchase_id' => ['nullable', Rule::exists('purchases', 'id')->where('user_id', $this->user()->id)],
             'amount' => ['required', 'numeric', 'gt:0'],
             'payment_date' => ['required', 'date'],
             'payment_method' => ['required', 'string', 'max:255'],

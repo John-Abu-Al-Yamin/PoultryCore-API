@@ -16,6 +16,7 @@ class BarnController extends Controller
         $user = $request->user();
 
         $barn = $user->barns()->create($data);
+
         return ApiResponse::success(
             data: $barn,
             message: 'تم حفظ الحقل بنجاح',
@@ -39,7 +40,7 @@ class BarnController extends Controller
         $user = $request->user();
         $barn = $user->barns()->with('batches')->find($id);
 
-        if (!$barn) {
+        if (! $barn) {
             return ApiResponse::error(
                 message: 'الحقل غير موجود',
                 statusCode: 404
@@ -57,7 +58,7 @@ class BarnController extends Controller
         $user = $request->user();
         $barn = $user->barns()->find($id);
 
-        if (!$barn) {
+        if (! $barn) {
             return ApiResponse::error(
                 message: 'الحقل غير موجود',
                 statusCode: 404
@@ -78,7 +79,7 @@ class BarnController extends Controller
         $user = $request->user();
         $barn = $user->barns()->find($id);
 
-        if (!$barn) {
+        if (! $barn) {
             return ApiResponse::error(
                 message: 'الحقل غير موجود',
                 statusCode: 404

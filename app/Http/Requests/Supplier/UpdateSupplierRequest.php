@@ -21,7 +21,7 @@ class UpdateSupplierRequest extends BaseApiRequest
                 'string',
                 'max:255',
                 Rule::unique('suppliers')
-                    ->where(fn($q) => $q->where('user_id', auth()->id()))
+                    ->where(fn ($q) => $q->where('user_id', auth()->id()))
                     ->ignore($this->route('id')),
             ],
             'phone' => ['sometimes', 'nullable', 'regex:/^01[0-9]{9}$/'],

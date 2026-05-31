@@ -15,7 +15,6 @@ class BaseApiRequest extends FormRequest
     protected function failedValidation(Validator $validator)
     {
         throw new HttpResponseException(
-
             ApiResponse::error(
                 message: 'Validation error',
                 statusCode: 422,

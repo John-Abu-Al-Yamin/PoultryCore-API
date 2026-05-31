@@ -3,8 +3,6 @@
 namespace App\Http\Requests\Batch;
 
 use App\Http\Requests\BaseApiRequest;
-use Illuminate\Contracts\Validation\ValidationRule;
-use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateBatchRequest extends BaseApiRequest
 {
@@ -32,7 +30,6 @@ class UpdateBatchRequest extends BaseApiRequest
 
             'poultry_type.string' => 'نوع الدواجن يجب أن يكون نصًا.',
             'poultry_type.max' => 'نوع الدواجن يجب ألا يزيد عن 255 حرف.',
-
 
             'start_date.date' => 'تاريخ البداية يجب أن يكون تاريخًا صحيحًا.',
 

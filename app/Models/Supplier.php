@@ -45,7 +45,7 @@ class Supplier extends Model
     protected function duesBalance(): Attribute
     {
         return Attribute::get(function () {
-            return $this->purchases()->sum('total_price') - $this->purchases()->sum('paid_amount');
+            return $this->total_dues;
         });
     }
 }

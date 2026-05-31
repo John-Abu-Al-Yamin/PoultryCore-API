@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Purchase;
 
 use App\Http\Requests\BaseApiRequest;
+use Illuminate\Validation\Rule;
 
 class UpdatePurchaseRequest extends BaseApiRequest
 {
@@ -14,8 +15,8 @@ class UpdatePurchaseRequest extends BaseApiRequest
     public function rules(): array
     {
         return [
-            'supplier_id' => ['sometimes', 'required', 'exists:suppliers,id'],
-            'batch_id' => ['sometimes', 'required', 'exists:batches,id'],
+            'supplier_id' => ['sometimes', 'required', Rule::exists('suppliers', 'id')->where('user_id', $this->user()->id)],
+            'batch_id' => ['sometimes', 'required', Rule::exists('batches', 'id')->where('user_id', $this->user()->id)],
             'item_name' => ['sometimes', 'required', 'string', 'max:255'],
             'quantity' => ['sometimes', 'required', 'integer', 'min:1'],
             'unit_price' => ['sometimes', 'required', 'numeric', 'min:0'],

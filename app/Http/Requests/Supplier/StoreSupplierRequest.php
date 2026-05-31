@@ -3,8 +3,8 @@
 namespace App\Http\Requests\Supplier;
 
 use App\Http\Requests\BaseApiRequest;
-use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 
 class StoreSupplierRequest extends BaseApiRequest
 {
@@ -29,7 +29,6 @@ class StoreSupplierRequest extends BaseApiRequest
             // 'total_dues' => ['nullable', 'numeric', 'min:0'],
         ];
     }
-
 
     public function messages(): array
     {

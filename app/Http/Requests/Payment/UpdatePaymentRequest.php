@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Payment;
 
 use App\Http\Requests\BaseApiRequest;
+use Illuminate\Validation\Rule;
 
 class UpdatePaymentRequest extends BaseApiRequest
 {
@@ -15,9 +16,9 @@ class UpdatePaymentRequest extends BaseApiRequest
     {
         return [
             'type' => ['sometimes', 'required', 'in:to_supplier'],
-            'supplier_id' => ['sometimes', 'nullable', 'exists:suppliers,id'],
-            'purchase_id' => ['sometimes', 'nullable', 'exists:purchases,id'],
-            'amount' => ['sometimes', 'required', 'numeric', 'min:0'],
+            'supplier_id' => ['sometimes', 'nullable', Rule::exists('suppliers', 'id')->where('user_id', $this->user()->id)],
+            'purchase_id' => ['sometimes', 'nullable', Rule::exists('purchases', 'id')->where('user_id', $this->user()->id)],
+            'amount' => ['sometimes', 'required', 'numeric', 'gt:0'],
             'payment_date' => ['sometimes', 'required', 'date'],
             'payment_method' => ['sometimes', 'required', 'string', 'max:255'],
             'notes' => ['sometimes', 'nullable', 'string'],
@@ -34,7 +35,7 @@ class UpdatePaymentRequest extends BaseApiRequest
             'purchase_id.exists' => 'عملية الشراء غير موجودة.',
 
             'amount.numeric' => 'المبلغ يجب أن يكون رقمًا.',
-            'amount.min' => 'المبلغ يجب أن يكون أكبر من أو يساوي 0.',
+            'amount.gt' => 'المبلغ يجب أن يكون أكبر من 0.',
 
             'payment_date.date' => 'تاريخ الدفع غير صالح.',
 

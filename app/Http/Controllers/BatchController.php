@@ -7,7 +7,6 @@ use App\Http\Requests\Batch\UpdateBatchRequest;
 use App\Http\Responses\ApiResponse;
 use Illuminate\Http\Request;
 
-
 /**
  * 📌 NOTE (Business Rule - Future Improvement):
  *
@@ -25,16 +24,12 @@ use Illuminate\Http\Request;
  * حالياً current_quantity قد لا يكون مستخدم بشكل فعلي،
  * لكنه مُجهز للمرحلة القادمة من النظام.
  */
-
-
 class BatchController extends Controller
 {
-
     public function store(StoreBatchRequest $request)
     {
         $data = $request->validated();
         $user = $request->user();
-
 
         $exists = $user->batches()
             ->where('barn_id', $data['barn_id'])
@@ -55,9 +50,10 @@ class BatchController extends Controller
         // complete setup
         if ($user->has_completed_setup == false) {
             $user->update([
-                'has_completed_setup' => true
+                'has_completed_setup' => true,
             ]);
         }
+
         return ApiResponse::success(
             data: $batch,
             message: 'تم إنشاء الدفعة بنجاح',
@@ -81,7 +77,7 @@ class BatchController extends Controller
         $user = $request->user();
         $batch = $user->batches()->find($id);
 
-        if (!$batch) {
+        if (! $batch) {
             return ApiResponse::error(
                 message: 'الدفعه غير موجودة',
                 statusCode: 404
@@ -100,7 +96,7 @@ class BatchController extends Controller
         $user = $request->user();
         $batch = $user->batches()->find($id);
 
-        if (!$batch) {
+        if (! $batch) {
             return ApiResponse::error(
                 message: 'الدفعه غير موجودة',
                 statusCode: 404
@@ -120,7 +116,7 @@ class BatchController extends Controller
         $user = $request->user();
         $batch = $user->batches()->find($id);
 
-        if (!$batch) {
+        if (! $batch) {
             return ApiResponse::error(
                 message: 'الدفعه غير موجودة',
                 statusCode: 404
@@ -134,24 +130,20 @@ class BatchController extends Controller
         );
     }
 
-
     public function close(Request $request, int $id)
     {
         $user = $request->user();
-
 
         $batch = $user->batches()
             ->where('status', 'active')
             ->find($id);
 
-
-        if (!$batch) {
+        if (! $batch) {
             return ApiResponse::error(
                 message: 'الدفعة غير موجودة أو تم إغلاقها',
                 statusCode: 404
             );
         }
-
 
         $batch->update([
             'status' => 'closed',

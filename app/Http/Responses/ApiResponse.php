@@ -4,7 +4,7 @@ namespace App\Http\Responses;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
-use Illuminate\Support\Facades\App;
+use Illuminate\Pagination\AbstractPaginator;
 
 class ApiResponse
 {
@@ -16,7 +16,7 @@ class ApiResponse
     ): JsonResponse {
         if (
             $data instanceof AnonymousResourceCollection &&
-            $data->resource instanceof \Illuminate\Pagination\AbstractPaginator
+            $data->resource instanceof AbstractPaginator
         ) {
 
             // Get the original pagination response

@@ -3,8 +3,8 @@
 namespace App\Http\Requests\Barn;
 
 use App\Http\Requests\BaseApiRequest;
-use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 
 class StoreBarnRequest extends BaseApiRequest
 {
@@ -43,7 +43,6 @@ class StoreBarnRequest extends BaseApiRequest
 
             'location.string' => 'موقع العنبر يجب أن يكون نصًا.',
             'location.max' => 'موقع العنبر لا يمكن أن يتجاوز 255 حرفًا.',
-
 
             'capacity.required' => 'سعة العنبر مطلوبة.',
             'capacity.integer' => 'سعة العنبر يجب أن تكون عددًا صحيحًا.',

@@ -86,6 +86,13 @@ class SupplierController extends Controller
             );
         }
 
+        if ($supplier->purchases()->count() > 0) {
+            return ApiResponse::error(
+                message: 'لا يمكن حذف مورد له مشتريات مسجلة',
+                statusCode: 422
+            );
+        }
+
         $supplier->delete();
 
         return ApiResponse::success(

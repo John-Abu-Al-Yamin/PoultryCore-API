@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('batches', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained("users")->onDelete('cascade');
-            $table->foreignId('barn_id')->constrained("barns")->onDelete("cascade");
+            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
+            $table->foreignId('barn_id')->constrained('barns')->onDelete('cascade');
             $table->string('poultry_type');
             $table->integer('current_quantity')->default(0);
             $table->date('start_date');

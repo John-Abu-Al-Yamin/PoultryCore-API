@@ -3,7 +3,6 @@
 namespace App\Http\Requests;
 
 use Illuminate\Contracts\Validation\ValidationRule;
-use Illuminate\Foundation\Http\FormRequest;
 
 class LoginRequest extends BaseApiRequest
 {
@@ -24,7 +23,7 @@ class LoginRequest extends BaseApiRequest
     {
         return [
             'phone' => 'required|string|max:255',
-            'password' => 'required|string|min:6'
+            'password' => 'required|string|min:6',
         ];
     }
 
@@ -32,15 +31,11 @@ class LoginRequest extends BaseApiRequest
     {
         return [
 
-            'phone.required' =>
-            'رقم الهاتف مطلوب.',
-            'phone.exists' =>
-            'رقم الهاتف غير موجود.',
+            'phone.required' => 'رقم الهاتف مطلوب.',
+            'phone.exists' => 'رقم الهاتف غير موجود.',
 
-            'password.required' =>
-            'كلمة المرور مطلوبة.',
-            'password.min' =>
-            'كلمة المرور يجب أن تكون على الأقل 6 أحرف.',
+            'password.required' => 'كلمة المرور مطلوبة.',
+            'password.min' => 'كلمة المرور يجب أن تكون على الأقل 6 أحرف.',
 
         ];
     }

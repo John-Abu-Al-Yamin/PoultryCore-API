@@ -58,7 +58,10 @@ class PaymentController extends Controller
         }
 
         if ($payment->supplier_id) {
-            Supplier::find($payment->supplier_id)?->decrement('total_dues', $payment->amount);
+            $supplier = Supplier::find($payment->supplier_id);
+            if ($supplier) {
+                $supplier->update(['total_dues' => max(0, $supplier->total_dues - $payment->amount)]);
+            }
         }
 
         return ApiResponse::success(
@@ -142,7 +145,7 @@ class PaymentController extends Controller
             // Purchase changed: unwind old, apply new
             $oldPurchase = Purchase::find($oldPurchaseId);
             if ($oldPurchase) {
-                $oldPurchase->decrement('paid_amount', $oldAmount);
+                $oldPurchase->update(['paid_amount' => max(0, $oldPurchase->paid_amount - $oldAmount)]);
                 $oldPurchase->recalculateStatus();
             }
             $newPurchase = Purchase::find($newPurchaseId);
@@ -154,14 +157,14 @@ class PaymentController extends Controller
             // Same purchase, amount changed
             $purchase = Purchase::find($newPurchaseId);
             if ($purchase) {
-                $purchase->increment('paid_amount', $newAmount - $oldAmount);
+                $purchase->update(['paid_amount' => max(0, $purchase->paid_amount + $newAmount - $oldAmount)]);
                 $purchase->recalculateStatus();
             }
         } elseif ($oldPurchaseId && ! $newPurchaseId) {
             // Purchase removed: unwind old
             $oldPurchase = Purchase::find($oldPurchaseId);
             if ($oldPurchase) {
-                $oldPurchase->decrement('paid_amount', $oldAmount);
+                $oldPurchase->update(['paid_amount' => max(0, $oldPurchase->paid_amount - $oldAmount)]);
                 $oldPurchase->recalculateStatus();
             }
         } elseif (! $oldPurchaseId && $newPurchaseId) {
@@ -175,10 +178,16 @@ class PaymentController extends Controller
 
         // Adjust supplier total_dues: unwind old effect, apply new effect
         if ($oldSupplierId) {
-            Supplier::find($oldSupplierId)?->increment('total_dues', $oldAmount);
+            $oldSupplier = Supplier::find($oldSupplierId);
+            if ($oldSupplier) {
+                $oldSupplier->update(['total_dues' => $oldSupplier->total_dues + $oldAmount]);
+            }
         }
         if ($newSupplierId) {
-            Supplier::find($newSupplierId)?->decrement('total_dues', $newAmount);
+            $newSupplier = Supplier::find($newSupplierId);
+            if ($newSupplier) {
+                $newSupplier->update(['total_dues' => max(0, $newSupplier->total_dues - $newAmount)]);
+            }
         }
 
         return ApiResponse::success(
@@ -213,7 +222,7 @@ class PaymentController extends Controller
         $payment->delete();
 
         if ($purchase) {
-            $purchase->decrement('paid_amount', $payment->amount);
+            $purchase->update(['paid_amount' => max(0, $purchase->paid_amount - $payment->amount)]);
             $purchase->recalculateStatus();
         }
 

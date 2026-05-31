@@ -99,14 +99,50 @@ class PurchaseController extends Controller
 
         $data = $request->validated();
 
+        if (array_key_exists('supplier_id', $data) && $data['supplier_id'] !== $purchase->supplier_id) {
+            return ApiResponse::error(
+                message: 'لا يمكن تغيير المورد بعد إنشاء عملية الشراء',
+                statusCode: 422
+            );
+        }
+
+        if (array_key_exists('batch_id', $data) && $data['batch_id'] !== $purchase->batch_id) {
+            return ApiResponse::error(
+                message: 'لا يمكن تغيير الدفعة بعد إنشاء عملية الشراء',
+                statusCode: 422
+            );
+        }
+
+        $oldQuantity = $purchase->quantity;
+        $oldTotalPrice = $purchase->total_price;
+
         if (array_key_exists('quantity', $data) || array_key_exists('unit_price', $data)) {
             $data['total_price'] = ($data['quantity'] ?? $purchase->quantity)
                 * ($data['unit_price'] ?? $purchase->unit_price);
         }
 
+        if (array_key_exists('total_price', $data) && $data['total_price'] < $purchase->paid_amount) {
+            return ApiResponse::error(
+                message: 'لا يمكن تقليل السعر الإجمالي إلى أقل من المبلغ المدفوع',
+                statusCode: 422
+            );
+        }
+
         $purchase->update($data);
 
+        if (array_key_exists('quantity', $data)) {
+            $diff = $data['quantity'] - $oldQuantity;
+            if ($diff !== 0) {
+                $purchase->batch()->increment('current_quantity', $diff);
+            }
+        }
+
         if (array_key_exists('total_price', $data)) {
+            $diff = $data['total_price'] - $oldTotalPrice;
+            if ($diff !== 0 && $purchase->payment_type === 'credit') {
+                $purchase->supplier->increment('total_dues', $diff);
+            }
+
             $purchase->recalculateStatus();
         }
 
@@ -135,11 +171,24 @@ class PurchaseController extends Controller
             );
         }
 
-        if ($purchase->payment_type === 'credit') {
-            $purchase->supplier->decrement('total_dues', $purchase->total_price - $purchase->paid_amount);
+        if ($purchase->batch && $purchase->batch->status === 'closed') {
+            return ApiResponse::error(
+                message: 'لا يمكن حذف مشتريات من دفعة مغلقة',
+                statusCode: 422
+            );
         }
 
-        $purchase->batch()->decrement('current_quantity', $purchase->quantity);
+        if ($purchase->payment_type === 'credit') {
+            $remaining = $purchase->total_price - $purchase->paid_amount;
+            if ($remaining > 0) {
+                $purchase->supplier->decrement('total_dues', $remaining);
+            }
+        }
+
+        $batch = $purchase->batch;
+        if ($batch) {
+            $batch->decrement('current_quantity', min($purchase->quantity, $batch->current_quantity));
+        }
         $purchase->delete();
 
         return ApiResponse::success(
