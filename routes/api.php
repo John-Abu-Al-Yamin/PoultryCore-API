@@ -5,6 +5,7 @@ use App\Http\Controllers\BarnController;
 use App\Http\Controllers\BatchController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DeathController;
+use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\SaleController;
@@ -82,5 +83,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/deaths/{id}', [DeathController::class, 'show']);
     Route::put('/deaths/{id}', [DeathController::class, 'update']);
     Route::delete('/deaths/{id}', [DeathController::class, 'destroy']);
+
+    // Expense ROUTES
+    Route::get('/expenses', [ExpenseController::class, 'index']);
+    Route::post('/expenses', [ExpenseController::class, 'store']);
+    Route::get('/expenses/{id}', [ExpenseController::class, 'show']);
+    Route::put('/expenses/{id}', [ExpenseController::class, 'update']);
+    Route::delete('/expenses/{id}', [ExpenseController::class, 'destroy']);
     
 });
