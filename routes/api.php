@@ -4,6 +4,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BarnController;
 use App\Http\Controllers\BatchController;
 use App\Http\Controllers\CustomerController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DeathController;
 use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\PaymentController;
@@ -24,6 +25,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/user', [AuthController::class, 'user']);
+    Route::get('/dashboard', [DashboardController::class, 'index']);
 
     // BARN ROUTES
     Route::get('/barns', [BarnController::class, 'index']);
