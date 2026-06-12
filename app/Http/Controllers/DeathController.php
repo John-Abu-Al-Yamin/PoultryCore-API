@@ -30,8 +30,7 @@ class DeathController extends Controller
         }
 
         $data['user_id'] = $user->id;
-        $death = Death::create($data);
-
+        $death = $user->deaths()->create($data);
         $batch->decrement('current_quantity', $data['quantity']);
 
         return ApiResponse::success(
@@ -46,8 +45,7 @@ class DeathController extends Controller
         $deaths = $request->user()->deaths()
             ->with('batch')
             ->latest()
-            ->paginate($request->input('per_page', 15));
-
+            ->get();
         return ApiResponse::success(
             data: $deaths,
             message: 'تم جلب الوفيات بنجاح'

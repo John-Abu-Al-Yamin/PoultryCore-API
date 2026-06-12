@@ -15,7 +15,6 @@ class StoreDeathRequest extends BaseApiRequest
     public function rules(): array
     {
         return [
-            'user_id' => 'required|exists:users,id',
             'batch_id' => 'required|exists:batches,id',
             'quantity' => 'required|integer|min:1',
             'date' => 'required|date',
@@ -26,8 +25,6 @@ class StoreDeathRequest extends BaseApiRequest
     public function messages(): array
     {
         return [
-            'user_id.required' => 'حقل المستخدم مطلوب.',
-            'user_id.exists' => 'المستخدم المحدد غير موجود.',
 
             'batch_id.required' => 'حقل الدفعة (Batch) مطلوب.',
             'batch_id.exists' => 'الدفعة المحددة غير موجودة.',

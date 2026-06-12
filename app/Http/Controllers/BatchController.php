@@ -169,4 +169,43 @@ class BatchController extends Controller
             message: 'تم إغلاق الدفعة بنجاح'
         );
     }
+
+    public function open(Request $request, int $id)
+    {
+        $user = $request->user();
+
+        $batch = $user->batches()
+            ->where('status', 'closed')
+            ->find($id);
+
+        if (! $batch) {
+            return ApiResponse::error(
+                message: 'الدفعة غير موجودة أو ليست مغلقة',
+                statusCode: 404
+            );
+        }
+
+        // Check if there's another active batch in the same barn
+        $exists = $user->batches()
+            ->where('barn_id', $batch->barn_id)
+            ->where('status', 'active')
+            ->exists();
+
+        if ($exists) {
+            return ApiResponse::error(
+                message: 'لا يمكن إعادة فتح الدفعة. يوجد دفعة نشطة بالفعل في هذا العنبر.',
+                statusCode: 422
+            );
+        }
+
+        $batch->update([
+            'status' => 'active',
+            'end_date' => null,
+        ]);
+
+        return ApiResponse::success(
+            data: $batch,
+            message: 'تم إعادة فتح الدفعة بنجاح'
+        );
+    }
 }

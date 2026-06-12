@@ -8,7 +8,7 @@ class Death extends Model
 {
     //
     protected $fillable = [
-        'user_id',
+
         'batch_id',
         'quantity',
         'date',
