@@ -139,7 +139,7 @@ Here is a visual overview of how the different parts of the system relate to eac
 | **Batches** | Groups of poultry in a barn | Type of bird, current count, start date, status |
 | **Suppliers** | People you buy from | Name, contact info, **total owed to them** |
 | **Customers** | People you sell to | Name, contact info, **total they owe you** |
-| **Purchases** | Everything you buy | Item, quantity, price, **payment status** |
+| **Purchases** | Everything you buy (chicks, feed, medicine, other) | Item, type, quantity, price, **payment status** |
 | **Sales** | Everything you sell | Item, quantity, price, **payment status** |
 | **Deaths** | Bird mortality | How many died, when, why |
 | **Expenses** | Operational costs | Type of expense, amount, date |
@@ -275,15 +275,19 @@ Here is a visual overview of how the different parts of the system relate to eac
   │                                                          │
   │  Increases when:              Decreases when:            │
   │  ┌────────────────────┐       ┌────────────────────┐     │
-  │  │ You buy chicks     │       │ You sell birds     │     │
-  │  │ (Purchase)         │       │ (Sale)             │     │
-  │  └────────────────────┘       └────────────────────┘     │
-  │                                  ┌────────────────────┐  │
-  │                                  │ Birds die          │  │
-  │                                  │ (Death record)     │  │
-  │                                  └────────────────────┘  │
+  │  │ Buy chicks only   │       │ You sell birds     │     │
+  │  │ (Purchase with    │       │ (Sale)             │     │
+  │  │  type = chicks)   │       └────────────────────┘     │
+  │  └────────────────────┘       ┌────────────────────┐     │
+  │  No change for feed, │       │ Birds die          │     │
+  │  medicine, or other   │       │ (Death record)     │     │
+  │  purchases            │       └────────────────────┘     │
   └─────────────────────────────────────────────────────────┘
 ```
+
+**Key rule:** Only purchases with type `chicks` increase the bird count.
+Purchases of type `feed`, `medicine`, or `other` are recorded as costs
+against the batch but do **not** modify the bird count.
 
 ---
 
@@ -360,8 +364,9 @@ Here is a visual overview of how the different parts of the system relate to eac
   2. Tap "Record Purchase"
   3. Enter:
      - Supplier (who you bought from)
-     - Batch (which batch this is for)
-     - Item name (e.g., "500 Broiler Chicks")
+     - Batch (which batch this is for — required for all types)
+     - Type: Chicks / Feed / Medicine / Other
+     - Item name (e.g., "500 Broiler Chicks", "Starter Feed")
      - Unit (e.g., "piece", "kilogram", "bag")
      - Quantity
      - Unit price
@@ -380,21 +385,22 @@ Here is a visual overview of how the different parts of the system relate to eac
   │  │ • You pay the full amount immediately                    │    │
   │  │ • The purchase is marked as "paid"                       │    │
   │  │ • Your supplier's dues are NOT affected                  │    │
-  │  │ • Your batch bird count INCREASES by the quantity        │    │
-  │  │   (e.g., buying 500 chicks adds 500 to the batch)        │    │
+  │  │ • If type is "chicks": batch bird count ▲ by quantity    │    │
+  │  │ • If type is feed/medicine/other: bird count unchanged   │    │
   │  └──────────────────────────────────────────────────────────┘    │
   │                                                                  │
   │  ┌─── CREDIT ───────────────────────────────────────────────┐    │
   │  │ • You don't pay today — you'll pay later                  │    │
   │  │ • The purchase is marked as "unpaid"                      │    │
   │  │ • Your supplier's total dues INCREASE by the total price  │    │
-  │  │ • Your batch bird count INCREASES by the quantity         │    │
+  │  │ • If type is "chicks": batch bird count ▲ by quantity     │    │
+  │  │ • If type is feed/medicine/other: bird count unchanged    │    │
   │  └──────────────────────────────────────────────────────────┘    │
   └──────────────────────────────────────────────────────────────────┘
 ```
 
 **Editing a purchase:**
-- You can change quantity (bird count adjusts automatically)
+- You can change quantity (bird count adjusts automatically **only for chick purchases**)
 - You can change total price (supplier dues adjust if credit)
 - You can switch between cash and credit (the system handles all financial adjustments)
 - You **cannot** change the supplier or batch after saving
@@ -403,7 +409,8 @@ Here is a visual overview of how the different parts of the system relate to eac
 **Deleting a purchase:**
 - Not allowed if payments have been made against this purchase
 - If credit: the unpaid amount is removed from supplier's dues
-- The bird count decreases by the purchase quantity
+- **If type is "chicks":** the bird count decreases by the purchase quantity
+- **If type is feed/medicine/other:** no change to bird count
 
 ---
 
@@ -615,12 +622,12 @@ Here is a visual overview of how the different parts of the system relate to eac
 1. **Checks the dashboard** — sees Barn A is empty (previous batch was closed). ✓
 2. **Creates a batch** in Barn A: "Broiler Batch #4", poultry type "Broiler", start date today.
 3. **Calls his chick supplier** — orders 1,000 broiler chicks at EGP 5 each = EGP 5,000 total.
-4. **Records the purchase:** Supplier "Mohamed's Hatchery", batch "Broiler Batch #4", 1,000 chicks, EGP 5 each, **cash** payment.
+4. **Records the purchase:** Supplier "Mohamed's Hatchery", batch "Broiler Batch #4", type **chicks**, 1,000 chicks, EGP 5 each, **cash** payment.
    - System deducts EGP 5,000 from his bank (in his mind — the system just records it)
    - System adds 1,000 birds to the batch count
-5. **Records a second purchase:** 500 kg of starter feed, EGP 10/kg = EGP 5,000, **credit**.
+5. **Records a second purchase:** Supplier "Feed Co.", batch "Broiler Batch #4", type **feed**, 500 kg of starter feed, EGP 10/kg = EGP 5,000, **credit**.
    - System adds EGP 5,000 to the supplier's total dues
-   - System adds 0 birds (feed doesn't add birds)
+   - System adds 0 birds (feed doesn't add birds — only chick purchases affect bird count)
 6. Checks dashboard: Batch now has 1,000 birds. Supplier owes: EGP 5,000.
 
 ---
@@ -750,7 +757,9 @@ This section shows the chain reaction when you perform common actions.
   │  CASH PURCHASE  │
   └────────┬────────┘
            │
-           ├────► Batch bird count  ▲ (increases)
+           ├── If type = chicks ──► Batch bird count  ▲ (increases)
+           │
+           ├── If type = feed/medicine/other ──► Bird count unchanged
            │
            ├────► Auto-payment created (cash to supplier)
            │
@@ -764,7 +773,9 @@ This section shows the chain reaction when you perform common actions.
   │  CREDIT PURCHASE  │
   └────────┬──────────┘
            │
-           ├────► Batch bird count  ▲ (increases)
+           ├── If type = chicks ──► Batch bird count  ▲ (increases)
+           │
+           ├── If type = feed/medicine/other ──► Bird count unchanged
            │
            ├────► Supplier total dues  ▲ (increases by total price)
            │
@@ -844,9 +855,9 @@ This section shows the chain reaction when you perform common actions.
   │  EDIT PURCHASE QTY │
   └─────────┬──────────┘
             │
-            ├─ If quantity increased ──► Batch bird count  ▲
+            ├─ If type = chicks ──► Batch bird count adjusts (▲/▼)
             │
-            └─ If quantity decreased ──► Batch bird count  ▼
+            └─ If type = feed/medicine/other ──► Bird count unchanged
 ```
 
 ### Deleting a Purchase
@@ -861,7 +872,8 @@ This section shows the chain reaction when you perform common actions.
           │
           ├────► Supplier dues  ▼ (unpaid amount removed)
           │
-          └────► Batch bird count  ▼ (quantity removed)
+          └── If type = chicks ──► Batch bird count  ▼ (quantity removed)
+              If type = feed/medicine/other ──► No change to bird count
 ```
 
 ---
@@ -879,13 +891,19 @@ This section explains the system's automatic actions in plain business language.
 2. If you didn't enter a total price, the system calculates it: `quantity × unit price`.
 3. Because you paid cash, the system marks the purchase as fully paid.
 4. The system automatically creates a **payment record** showing you paid the supplier in cash.
-5. The system **adds the purchased quantity** to the batch's bird count.
-6. The supplier's "total dues" are **not affected** (because you paid immediately).
+5. **If the purchase type is "chicks":** the system adds the purchased quantity to the batch's bird count.
+6. **If the purchase type is feed, medicine, or other:** the bird count is **not changed**.
+7. The supplier's "total dues" are **not affected** (because you paid immediately).
 
 **Example:** Buying 500 chicks at EGP 5 each with cash:
-- Purchase recorded: EGP 2,500, status "paid"
+- Purchase recorded: type "chicks", EGP 2,500, status "paid"
 - Auto-payment created: EGP 2,500 to supplier, method "cash"
 - Batch bird count: +500
+
+**Example:** Buying 500 kg of feed at EGP 10/kg with cash:
+- Purchase recorded: type "feed", EGP 5,000, status "paid"
+- Auto-payment created: EGP 5,000 to supplier, method "cash"
+- Batch bird count: unchanged
 
 ### 8.2 When You Record a Credit Purchase
 
@@ -895,13 +913,19 @@ This section explains the system's automatic actions in plain business language.
 1. Same validation and price calculation.
 2. Because you bought on credit, the system marks the purchase as **unpaid**.
 3. The system **adds the total price** to the supplier's "total dues" (what you owe them).
-4. The system **adds the purchased quantity** to the batch's bird count.
-5. No payment record is created (you'll pay later).
+4. **If the purchase type is "chicks":** the system adds the purchased quantity to the batch's bird count.
+5. **If the purchase type is feed, medicine, or other:** the bird count is **not changed**.
+6. No payment record is created (you'll pay later).
+
+**Example:** Buying 500 chicks at EGP 5 each on credit:
+- Purchase recorded: type "chicks", EGP 2,500, status "unpaid"
+- Supplier's total dues: +EGP 2,500
+- Batch bird count: +500
 
 **Example:** Buying feed worth EGP 5,000 on credit:
-- Purchase recorded: EGP 5,000, status "unpaid"
+- Purchase recorded: type "feed", EGP 5,000, status "unpaid"
 - Supplier's total dues: +EGP 5,000
-- Batch bird count: +0 (feed doesn't add birds)
+- Batch bird count: +0 (feed doesn't add birds — only chick purchases affect bird count)
 
 ### 8.3 When You Record a Cash Sale
 
@@ -1137,14 +1161,14 @@ Four numbers are automatically maintained by the system. They update in real-tim
 
 | Number | What It Tracks | Goes Up When | Goes Down When |
 |--------|---------------|--------------|----------------|
-| **Batch Bird Count** | Live birds in a batch | You buy chicks/inputs (purchase) | You sell birds (sale), birds die (death) |
+| **Batch Bird Count** | Live birds in a batch | You buy chicks (purchase with type = chicks) | You sell birds (sale), birds die (death) |
 | **Supplier Total Dues** | What you owe your suppliers | You buy on credit | You pay them (payment) |
 | **Customer Total Debts** | What customers owe you | You sell on credit | They pay you (payment) |
 | **Purchase/Sale Paid Amount** | How much of a transaction is settled | You make/receive a payment | You edit/delete a payment |
 
 ### The Golden Rules
 
-1. **Every purchase** adds to inventory. Every **sale** and **death** subtracts from inventory.
+1. **Only chick purchases** add to bird count. Feed, medicine, and other purchases are operational costs recorded against the batch. Every **sale** and **death** subtracts from inventory.
 2. **Cash transactions** don't create debts. Money moves immediately.
 3. **Credit transactions** create debts. Money moves later when a payment is recorded.
 4. **Payments** are the bridge — they convert credit into cash by reducing debts.

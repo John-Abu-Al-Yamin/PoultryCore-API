@@ -45,7 +45,9 @@ class PurchaseController extends Controller
             $purchase->supplier->increment('total_dues', $purchase->total_price);
         }
 
-        $purchase->batch()->increment('current_quantity', $purchase->quantity);
+        if ($data['type'] === 'chicks') {
+            $purchase->batch()->increment('current_quantity', $purchase->quantity);
+        }
 
         return ApiResponse::success(
             data: $purchase,
@@ -198,7 +200,7 @@ class PurchaseController extends Controller
 
         $purchase->update($data);
 
-        if (array_key_exists('quantity', $data) && $diff !== 0) {
+        if ($purchase->type === 'chicks' && array_key_exists('quantity', $data) && $diff !== 0) {
             $purchase->batch()->increment('current_quantity', $diff);
         }
 
@@ -250,9 +252,11 @@ class PurchaseController extends Controller
             }
         }
 
-        $batch = $purchase->batch;
-        if ($batch) {
-            $batch->decrement('current_quantity', min($purchase->quantity, $batch->current_quantity));
+        if ($purchase->type === 'chicks') {
+            $batch = $purchase->batch;
+            if ($batch) {
+                $batch->decrement('current_quantity', min($purchase->quantity, $batch->current_quantity));
+            }
         }
         $purchase->delete();
 

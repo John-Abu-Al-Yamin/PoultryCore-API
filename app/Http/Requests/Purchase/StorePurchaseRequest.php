@@ -23,6 +23,7 @@ class StorePurchaseRequest extends BaseApiRequest
                 'required',
                 Rule::exists('batches', 'id')->where('user_id', $this->user()->id),
             ],
+            'type' => ['required', 'in:chicks,feed,medicine,other'],
             'item_name' => ['required', 'string', 'max:255'],
             'quantity' => ['required', 'integer', 'min:1'],
             'unit_price' => ['required', 'numeric', 'min:0'],
@@ -39,6 +40,9 @@ class StorePurchaseRequest extends BaseApiRequest
 
             'batch_id.required' => 'الدفعة مطلوبة.',
             'batch_id.exists' => 'الدفعة غير موجودة.',
+
+            'type.required' => 'نوع الشراء مطلوب.',
+            'type.in' => 'نوع الشراء يجب أن يكون chicks, feed, medicine, أو other.',
 
             'item_name.required' => 'اسم العنصر مطلوب.',
 

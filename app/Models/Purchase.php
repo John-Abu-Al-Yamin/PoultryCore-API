@@ -14,6 +14,7 @@ class Purchase extends Model
         'user_id',
         'supplier_id',
         'batch_id',
+        'type',
         'item_name',
         'unit',
         'quantity',
@@ -60,9 +61,11 @@ class Purchase extends Model
     protected static function booted(): void
     {
         static::restored(function (Purchase $purchase) {
-            $batch = $purchase->batch;
-            if ($batch) {
-                $batch->increment('current_quantity', $purchase->quantity);
+            if ($purchase->type === 'chicks') {
+                $batch = $purchase->batch;
+                if ($batch) {
+                    $batch->increment('current_quantity', $purchase->quantity);
+                }
             }
 
             if ($purchase->payment_type === 'credit') {

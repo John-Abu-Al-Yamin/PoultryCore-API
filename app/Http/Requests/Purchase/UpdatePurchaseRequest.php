@@ -17,6 +17,7 @@ class UpdatePurchaseRequest extends BaseApiRequest
         return [
             'supplier_id' => ['sometimes', 'required', Rule::exists('suppliers', 'id')->where('user_id', $this->user()->id)],
             'batch_id' => ['sometimes', 'required', Rule::exists('batches', 'id')->where('user_id', $this->user()->id)],
+            'type' => ['sometimes', 'required', 'in:chicks,feed,medicine,other'],
             'item_name' => ['sometimes', 'required', 'string', 'max:255'],
             'unit' => ['sometimes', 'string', 'max:50'],
             'quantity' => ['sometimes', 'required', 'integer', 'min:1'],
@@ -30,6 +31,7 @@ class UpdatePurchaseRequest extends BaseApiRequest
     {
         return [
             'supplier_id.exists' => 'المورد غير موجود.',
+            'type.in' => 'نوع الشراء يجب أن يكون chicks, feed, medicine, أو other.',
             'batch_id.exists' => 'الدفعة غير موجودة.',
 
             'item_name.required' => 'اسم العنصر مطلوب.',
