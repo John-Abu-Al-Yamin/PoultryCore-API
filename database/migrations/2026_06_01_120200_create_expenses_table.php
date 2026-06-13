@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->foreignId('batch_id')->constrained('batches')->onDelete('cascade');
-            $table->enum('type', ['feed', 'treatment', 'utilities', 'labor', 'maintenance', 'transport', 'other']);
+            $table->enum('type', ['tools', 'electricity', 'transportation', 'rent', 'salaries','maintenance', 'other']);
             $table->decimal('amount', 10, 2);
             $table->date('date');
             $table->string('notes')->nullable();

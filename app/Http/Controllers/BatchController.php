@@ -208,4 +208,52 @@ class BatchController extends Controller
             message: 'تم إعادة فتح الدفعة بنجاح'
         );
     }
+
+    public function costs(Request $request, int $id)
+    {
+        $user = $request->user();
+        $batch = $user->batches()->find($id);
+
+        if (! $batch) {
+            return ApiResponse::error(
+                message: 'الدفعة غير موجودة',
+                statusCode: 404
+            );
+        }
+
+        $purchases = $batch->purchases()->get();
+        $sales = $batch->sales()->get();
+
+        $purchaseByType = $purchases->groupBy('type')->map(function ($items, $type) {
+            return [
+                'total' => (float) $items->sum('total_price'),
+                'count' => $items->count(),
+                'quantity' => $items->sum('quantity'),
+            ];
+        });
+
+        $costs = [
+            'batch_id' => $batch->id,
+            'summary' => [
+                'total_purchases' => (float) $purchases->sum('total_price'),
+                'total_sales' => (float) $sales->sum('total_price'),
+                'net' => (float) $sales->sum('total_price') - $purchases->sum('total_price'),
+            ],
+            'purchases' => [
+                'chicks' => $purchaseByType['chicks'] ?? ['total' => 0, 'count' => 0, 'quantity' => 0],
+                'feed' => $purchaseByType['feed'] ?? ['total' => 0, 'count' => 0, 'quantity' => 0],
+                'medicine' => $purchaseByType['medicine'] ?? ['total' => 0, 'count' => 0, 'quantity' => 0],
+                'other' => $purchaseByType['other'] ?? ['total' => 0, 'count' => 0, 'quantity' => 0],
+            ],
+            'revenue' => [
+                'total' => (float) $sales->sum('total_price'),
+                'count' => $sales->count(),
+            ],
+        ];
+
+        return ApiResponse::success(
+            data: $costs,
+            message: 'تم جلب تكاليف الدفعة بنجاح'
+        );
+    }
 }

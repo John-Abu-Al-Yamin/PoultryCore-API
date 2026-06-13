@@ -42,6 +42,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/batches/{id}', [BatchController::class, 'destroy']);
     Route::post('/batches/{id}/close', [BatchController::class, 'close']);
     Route::post('/batches/{id}/open', [BatchController::class, 'open']);
+    Route::get('/batches/{id}/costs', [BatchController::class, 'costs']);
 
 
     // SUPPLIER ROUTES
