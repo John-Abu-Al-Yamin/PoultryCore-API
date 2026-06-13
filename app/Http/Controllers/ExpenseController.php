@@ -26,7 +26,8 @@ class ExpenseController extends Controller
 
     public function index(Request $request)
     {
-        $expenses = $request->user()->expenses()->with('batch')->get();
+        $perPage = (int) $request->input('per_page', 10);
+        $expenses = $request->user()->expenses()->with('batch')->paginate($perPage);
 
         return ApiResponse::success(
             data: $expenses,

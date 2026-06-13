@@ -42,10 +42,11 @@ class DeathController extends Controller
 
     public function index(Request $request)
     {
+        $perPage = (int) $request->input('per_page', 10);
         $deaths = $request->user()->deaths()
             ->with('batch')
             ->latest()
-            ->get();
+            ->paginate($perPage);
         return ApiResponse::success(
             data: $deaths,
             message: 'تم جلب الوفيات بنجاح'

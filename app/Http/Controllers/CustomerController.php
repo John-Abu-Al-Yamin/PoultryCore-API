@@ -25,7 +25,8 @@ class CustomerController extends Controller
     public function index(Request $request)
     {
         $user = $request->user();
-        $customers = $user->customers()->get();
+        $perPage = (int) $request->input('per_page', 10);
+        $customers = $user->customers()->paginate($perPage);
 
         return ApiResponse::success(
             data: $customers,

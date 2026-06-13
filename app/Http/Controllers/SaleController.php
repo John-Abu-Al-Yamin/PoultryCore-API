@@ -63,7 +63,8 @@ class SaleController extends Controller
     public function index(Request $request)
     {
         $user = $request->user();
-        $sales = $user->sales()->with(['customer', 'batch'])->get();
+        $perPage = (int) $request->input('per_page', 10);
+        $sales = $user->sales()->with(['customer', 'batch'])->paginate($perPage);
 
         return ApiResponse::success(
             data: $sales,

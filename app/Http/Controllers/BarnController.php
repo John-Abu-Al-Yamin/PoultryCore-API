@@ -27,7 +27,8 @@ class BarnController extends Controller
     public function index(Request $request)
     {
         $user = $request->user();
-        $barns = $user->barns()->withCount('batches')->get();
+        $perPage = (int) $request->input('per_page', 10);
+        $barns = $user->barns()->withCount('batches')->paginate($perPage);
 
         return ApiResponse::success(
             data: $barns,

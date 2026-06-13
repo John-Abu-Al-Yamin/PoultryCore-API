@@ -16,7 +16,8 @@ class PaymentController extends Controller
     public function index(Request $request)
     {
         $user = $request->user();
-        $payments = $user->payments()->with(['supplier', 'purchase', 'customer', 'sale'])->get();
+        $perPage = (int) $request->input('per_page', 10);
+        $payments = $user->payments()->with(['supplier', 'purchase', 'customer', 'sale'])->paginate($perPage);
 
         return ApiResponse::success(
             data: $payments,

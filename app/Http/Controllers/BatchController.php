@@ -64,7 +64,8 @@ class BatchController extends Controller
     public function index(Request $request)
     {
         $user = $request->user();
-        $batches = $user->batches()->get();
+        $perPage = (int) $request->input('per_page', 10);
+        $batches = $user->batches()->paginate($perPage);
 
         return ApiResponse::success(
             data: $batches,

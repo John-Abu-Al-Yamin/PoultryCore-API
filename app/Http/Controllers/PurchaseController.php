@@ -59,7 +59,8 @@ class PurchaseController extends Controller
     public function index(Request $request)
     {
         $user = $request->user();
-        $purchases = $user->purchases()->with(['supplier', 'batch'])->get();
+        $perPage = (int) $request->input('per_page', 10);
+        $purchases = $user->purchases()->with(['supplier', 'batch'])->paginate($perPage);
 
         return ApiResponse::success(
             data: $purchases,
